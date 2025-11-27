@@ -1,0 +1,45 @@
+Menu Roadmap
+===========
+
+1. Data Model Review
+	- Confirm usage of `roles`, `users`, `categories`, `tasks`, and `role_tasks` as defined in `scripts/migrate.js`.
+	- Ensure `tasks` include `category_id`, `route`, `ord`, and `active` flags for filtering.
+
+2. Server Fetch Flow
+	- JWT payload already includes the user's role; use it for quick client checks and menu requests.
+	- Ensure `src/routes/menu/+server.js` returns categories with nested tasks filtered by role membership using `getMenuForUser`.
+	- Embrace server-side caching (`createMenu`) since menu structure changes infrequently; define invalidation triggers for admin edits.
+
+3. Sidebar Component Plan
+	- Build a `Sidebar` component that receives a `menu` array (categories with tasks) and optional loading state.
+	- Render categories ordered by `ord`, each with an icon (from task/category metadata or a mapping) and heading.
+	- Under each category, display a vertically scrollable task list with navigation links and active route highlight.
+	- Align visuals with SAP-inspired aesthetic: muted palette, structured spacing, consistent iconography.
+
+4. Client Loading Flow
+	- In `AppFrame.svelte`, decode JWT on mount for embedded `menu`; if missing/stale, fetch `/menu`.
+	- Store menu data in a Svelte store for reuse across components and updates.
+	- Refresh menu after token refresh or role change.
+
+5. Role Changes / Permissions
+	- Ensure new JWTs reflect role changes so menu updates automatically on next login.
+
+6. Testing Strategy
+	- Seed sample roles/tasks via migration script (already in place).
+	- Add Vitest integration tests verifying `/menu` returns expected structure for admin vs standard users.
+
+7. Future Enhancements (Optional)
+	- Provide admin UI to manage categories/tasks without redeploy.
+	- Add task metadata support (icons, badges, tooltips).
+	- Extend RBAC with permission flags beyond simple role-task association.
+	- Implement client-side caching with versioning to reduce repeated fetches.
+	- Introduce KPI/summary dashboard cards tailored to user roles.
+	- Incorporate responsive table layouts with toolbar filters/actions.
+
+Upcoming Tasks
+
+- Implement CRUD interfaces and API endpoints for users.
+- Implement CRUD interfaces and API endpoints for roles.
+- Implement CRUD interfaces and API endpoints for categories.
+- Implement CRUD interfaces and API endpoints for tasks.
+- Implement CRUD interfaces and API endpoints for role-task mappings.
