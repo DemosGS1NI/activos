@@ -25,7 +25,7 @@
     {:else}
       <a
         href="/login"
-        class="px-3 py-1 rounded bg-indigo-600 text-white text-sm">Sign in</a
+        class="px-3 py-1 rounded bg-indigo-600 text-white text-sm">Iniciar sesión</a
       >
     {/if}
   </div>

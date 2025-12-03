@@ -9,7 +9,7 @@
     e.preventDefault();
     error = "";
     if (!email || !password) {
-      error = "Email and password are required";
+      error = "Correo y contraseña son obligatorios";
       return;
     }
     loading = true;
@@ -21,7 +21,7 @@
       });
       const body = await res.json();
       if (!res.ok) {
-        error = body?.error?.message || "Registration failed";
+        error = body?.error?.message || "Error al registrarse";
         return;
       }
       const tokens = body.data.tokens;
@@ -31,7 +31,7 @@
       }
       window.location.href = "/";
     } catch (e) {
-      error = e.message || "Network error";
+      error = e.message || "Error de red";
     } finally {
       loading = false;
     }
@@ -40,7 +40,7 @@
 
 <div class="min-h-screen flex items-center justify-center bg-gray-50">
   <div class="w-full max-w-md p-8 bg-white rounded-lg shadow">
-    <h1 class="text-2xl font-semibold mb-6">Create account</h1>
+    <h1 class="text-2xl font-semibold mb-6">Crear cuenta</h1>
     {#if error}
       <div class="mb-4 text-sm text-red-700 bg-red-100 p-3 rounded">
         {error}
@@ -49,7 +49,7 @@
     <form on:submit|preventDefault={submit} class="space-y-4">
       <div>
         <label for="name" class="block text-sm font-medium text-gray-700"
-          >Full name</label
+          >Nombre completo</label
         >
         <input
           id="name"
@@ -60,7 +60,7 @@
       </div>
       <div>
         <label for="email" class="block text-sm font-medium text-gray-700"
-          >Email</label
+          >Correo electrónico</label
         >
         <input
           id="email"
@@ -72,7 +72,7 @@
       </div>
       <div>
         <label for="password" class="block text-sm font-medium text-gray-700"
-          >Password</label
+          >Contraseña</label
         >
         <input
           id="password"
@@ -84,7 +84,7 @@
       </div>
       <div class="flex items-center justify-between">
         <a href="/login" class="text-sm text-indigo-600 hover:underline"
-          >Sign in</a
+          >Iniciar sesión</a
         >
       </div>
       <div>
@@ -93,7 +93,7 @@
           class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
           disabled={loading}
         >
-          {#if loading}Creating...{:else}Create account{/if}
+          {#if loading}Creando...{:else}Crear cuenta{/if}
         </button>
       </div>
     </form>

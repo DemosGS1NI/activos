@@ -9,7 +9,7 @@
     e.preventDefault();
     error = "";
     if (!email || !password) {
-      error = "Email and password are required";
+      error = "Correo y contraseña son obligatorios";
       return;
     }
     loading = true;
@@ -21,7 +21,7 @@
       });
       const body = await res.json();
       if (!res.ok) {
-        error = body?.error?.message || "Login failed";
+        error = body?.error?.message || "Error al iniciar sesión";
         return;
       }
       // Persist tokens (client-side demo). For production prefer HttpOnly cookies.
@@ -33,7 +33,7 @@
       // Redirect to home
       window.location.href = "/";
     } catch (e) {
-      error = e.message || "Network error";
+      error = e.message || "Error de red";
     } finally {
       loading = false;
     }
@@ -48,7 +48,7 @@
 
 <div class="min-h-screen flex items-center justify-center bg-gray-50">
   <div class="w-full max-w-md p-8 bg-white rounded-lg shadow">
-    <h1 class="text-2xl font-semibold mb-6">Sign in</h1>
+    <h1 class="text-2xl font-semibold mb-6">Iniciar sesión</h1>
     {#if error}
       <div class="mb-4 text-sm text-red-700 bg-red-100 p-3 rounded">
         {error}
@@ -57,7 +57,7 @@
     <form on:submit|preventDefault={submit} class="space-y-4">
       <div>
         <label for="email" class="block text-sm font-medium text-gray-700"
-          >Email</label
+          >Correo electrónico</label
         >
         <input
           id="email"
@@ -69,7 +69,7 @@
       </div>
       <div>
         <label for="password" class="block text-sm font-medium text-gray-700"
-          >Password</label
+          >Contraseña</label
         >
         <input
           id="password"
@@ -88,10 +88,10 @@
               else localStorage.removeItem("last_email");
             }}
           />
-          <span class="ml-2 text-sm text-gray-600">Remember email</span>
+          <span class="ml-2 text-sm text-gray-600">Recordar correo</span>
         </label>
         <a href="/register" class="text-sm text-indigo-600 hover:underline"
-          >Create account</a
+          >Crear cuenta</a
         >
       </div>
       <div>
@@ -100,7 +100,7 @@
           class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
           disabled={loading}
         >
-          {#if loading}Signing in...{:else}Sign in{/if}
+          {#if loading}Iniciando...{:else}Iniciar sesión{/if}
         </button>
       </div>
     </form>
