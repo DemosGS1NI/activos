@@ -19,6 +19,8 @@
   import ResponsibleManager from "./ResponsibleManager.svelte";
   import ProviderManager from "./ProviderManager.svelte";
   import AssetManager from "./AssetManager.svelte";
+  import InventoryConditionManager from "./InventoryConditionManager.svelte";
+  import InventoryTaking from "./InventoryTaking.svelte";
   import ProfileModal from "./ProfileModal.svelte";
   import menuStore, { setMenu, clearMenu } from "../stores/menuStore.js";
 
@@ -134,6 +136,8 @@
     if (mode === "responsibles") return "/responsibles";
     if (mode === "providers") return "/providers";
     if (mode === "assets") return "/assets";
+    if (mode === "inventoryConditions") return "/inventory_conditions";
+    if (mode === "inventoryTaking") return "/inventory/taking";
     return "/";
   }
 
@@ -146,7 +150,12 @@
     }
   }
 
-  $: if (userReady && !isAdmin && viewMode !== "overview") {
+  $: if (
+    userReady &&
+    !isAdmin &&
+    viewMode !== "overview" &&
+    viewMode !== "inventoryTaking"
+  ) {
     switchView("overview");
   }
 
@@ -167,9 +176,13 @@
         initialView === "locations" ||
         initialView === "responsibles" ||
         initialView === "providers" ||
-        initialView === "assets")
+        initialView === "assets" ||
+        initialView === "inventoryConditions" ||
+        initialView === "inventoryTaking")
     ) {
       switchView(initialView, { syncRoute: false });
+    } else if (!isAdmin && initialView === "inventoryTaking") {
+      switchView("inventoryTaking", { syncRoute: false });
     } else {
       switchView("overview", { syncRoute: false });
     }
@@ -218,6 +231,14 @@
       } else {
         goto("/users");
       }
+    } else if (task.route === "/inventory_conditions") {
+      if (isAdmin) {
+        switchView("inventoryConditions");
+      } else {
+        goto("/inventory_conditions");
+      }
+    } else if (task.route === "/inventory/taking") {
+      switchView("inventoryTaking");
     } else if (
       task.route === "/role_tasks" ||
       task.route === "/role-tasks" ||
@@ -334,6 +355,10 @@
         <ProviderManager on:change={handleAdminChange} />
       {:else if isAdmin && viewMode === "assets"}
         <AssetManager on:change={handleAdminChange} />
+      {:else if isAdmin && viewMode === "inventoryConditions"}
+        <InventoryConditionManager on:change={handleAdminChange} />
+      {:else if viewMode === "inventoryTaking"}
+        <InventoryTaking />
       {:else}
         <MenuGroupGrid {menu} />
       {/if}

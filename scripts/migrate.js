@@ -4,7 +4,7 @@ import { createPool } from '@vercel/postgres';
 function loadDatabaseUrl() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
   try {
-    const text = fs.readFileSync('.env.local', 'utf8');
+    const text = fs.readFileSync('.env', 'utf8');
     for (const line of text.split(/\r?\n/)) {
       const match = line.match(/^DATABASE_URL\s*=\s*(.+)$/);
       if (match) {
@@ -302,6 +302,61 @@ async function postInitPatches() {
       ('VEHICULOS', 'Vehículos'),
       ('MAQUINARIA', 'Maquinaria')
     ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
+  `;
+
+  await pool.sql`
+    CREATE TABLE IF NOT EXISTS inventory_conditions (
+      id SERIAL PRIMARY KEY,
+      slug TEXT NOT NULL UNIQUE,
+      label TEXT NOT NULL,
+      severity SMALLINT,
+      description TEXT,
+      active BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
+  await pool.sql`
+    CREATE TABLE IF NOT EXISTS inventory_checks (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      asset_id UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+      scanned_code TEXT,
+      checked_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+      checked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+      condition_id INTEGER REFERENCES inventory_conditions(id) ON DELETE SET NULL,
+      comment TEXT,
+      previous_responsible_id UUID REFERENCES responsibles(id) ON DELETE SET NULL,
+      new_responsible_id UUID REFERENCES responsibles(id) ON DELETE SET NULL,
+      responsible_updated BOOLEAN NOT NULL DEFAULT false,
+      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
+  await pool.sql`
+    CREATE INDEX IF NOT EXISTS idx_inventory_checks_asset_checked_at
+      ON inventory_checks (asset_id, checked_at)
+  `;
+
+  await pool.sql`
+    CREATE INDEX IF NOT EXISTS idx_inventory_checks_scanned_code
+      ON inventory_checks (scanned_code)
+  `;
+
+  await pool.sql`
+    CREATE INDEX IF NOT EXISTS idx_inventory_checks_checked_by
+      ON inventory_checks (checked_by)
+  `;
+
+  await pool.sql`
+    INSERT INTO inventory_conditions (slug, label, severity)
+    VALUES
+      ('good', 'En buen estado', 0),
+      ('damaged', 'Dañado', 5),
+      ('missing', 'No localizado', 10)
+    ON CONFLICT (slug) DO UPDATE SET label = EXCLUDED.label, severity = EXCLUDED.severity
   `;
 }
 

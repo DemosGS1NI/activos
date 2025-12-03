@@ -15,6 +15,7 @@
     listLocations,
     listResponsibles,
   } from "../client/api.js";
+  import { openSymbolWindow } from "../symbols.js";
   import { icons } from "./icons.js";
 
   const dispatch = createEventDispatcher();
@@ -513,6 +514,24 @@
                 </td>
                 <td class={`${DATA_CELL_CLASS} text-right`}>
                   <div class="flex justify-end gap-2">
+                    <button
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-200 bg-white text-sky-600 shadow-sm transition hover:border-sky-300 hover:bg-sky-50"
+                      type="button"
+                      on:click={() => openSymbolWindow({ type: 'code128', code: item.asset_tag })}
+                      aria-label="Generar código de barras"
+                      title="Generar código de barras"
+                    >
+                      <span class="text-xs font-semibold">BC</span>
+                    </button>
+                    <button
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-200 bg-white text-sky-600 shadow-sm transition hover:border-sky-300 hover:bg-sky-50"
+                      type="button"
+                      on:click={() => openSymbolWindow({ type: 'qr', code: item.asset_tag })}
+                      aria-label="Generar QR"
+                      title="Generar QR"
+                    >
+                      <span class="text-xs font-semibold">QR</span>
+                    </button>
                     <button
                       class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50"
                       type="button"

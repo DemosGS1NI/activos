@@ -92,6 +92,49 @@ export async function deleteAssetStatus(id) {
   await apiFetch(`/asset_statuses/${id}`, { method: "DELETE" });
 }
 
+export async function listInventoryConditions() {
+  const data = await apiFetch("/inventory_conditions");
+  return data?.inventory_conditions || [];
+}
+
+export async function createInventoryCondition(payload) {
+  const data = await apiFetch("/inventory_conditions", {
+    method: "POST",
+    body: payload,
+  });
+  return data?.inventory_condition || null;
+}
+
+export async function updateInventoryCondition(id, payload) {
+  const data = await apiFetch(`/inventory_conditions/${id}`, {
+    method: "PATCH",
+    body: payload,
+  });
+  return data?.inventory_condition || null;
+}
+
+export async function deleteInventoryCondition(id) {
+  await apiFetch(`/inventory_conditions/${id}`, { method: "DELETE" });
+}
+
+export async function lookupInventoryAsset(code, { includeHistory = true } = {}) {
+  const trimmed = (code ?? "").toString().trim();
+  const params = new URLSearchParams();
+  if (trimmed) params.set("code", trimmed);
+  if (includeHistory) params.set("includeHistory", "true");
+  const qs = params.toString();
+  const data = await apiFetch(`/api/inventory/assets${qs ? `?${qs}` : ""}`);
+  return data || {};
+}
+
+export async function submitInventoryCheck(payload) {
+  const data = await apiFetch("/api/inventory/checks", {
+    method: "POST",
+    body: payload,
+  });
+  return data?.check || null;
+}
+
 export async function listAssetCategories() {
   const data = await apiFetch("/asset_categories");
   return data?.asset_categories || [];
