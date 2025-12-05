@@ -21,6 +21,8 @@
   import AssetManager from "./AssetManager.svelte";
   import InventoryConditionManager from "./InventoryConditionManager.svelte";
   import InventoryTaking from "./InventoryTaking.svelte";
+  import InventoryCampaignManager from "./InventoryCampaignManager.svelte";
+  import InventoryDashboard from "./InventoryDashboard.svelte";
   import ProfileModal from "./ProfileModal.svelte";
   import menuStore, { setMenu, clearMenu } from "../stores/menuStore.js";
 
@@ -137,6 +139,8 @@
     if (mode === "providers") return "/providers";
     if (mode === "assets") return "/assets";
     if (mode === "inventoryConditions") return "/inventory_conditions";
+    if (mode === "inventoryCampaigns") return "/inventory/campaigns";
+    if (mode === "inventoryDashboard") return "/inventory/dashboard";
     if (mode === "inventoryTaking") return "/inventory/taking";
     return "/";
   }
@@ -178,11 +182,15 @@
         initialView === "providers" ||
         initialView === "assets" ||
         initialView === "inventoryConditions" ||
+        initialView === "inventoryCampaigns" ||
+        initialView === "inventoryDashboard" ||
         initialView === "inventoryTaking")
     ) {
       switchView(initialView, { syncRoute: false });
     } else if (!isAdmin && initialView === "inventoryTaking") {
       switchView("inventoryTaking", { syncRoute: false });
+    } else if (!isAdmin && initialView === "inventoryDashboard") {
+      switchView("inventoryDashboard", { syncRoute: false });
     } else {
       switchView("overview", { syncRoute: false });
     }
@@ -237,6 +245,14 @@
       } else {
         goto("/inventory_conditions");
       }
+    } else if (task.route === "/inventory/campaigns") {
+      if (isAdmin) {
+        switchView("inventoryCampaigns");
+      } else {
+        goto("/inventory/campaigns");
+      }
+    } else if (task.route === "/inventory/dashboard") {
+      switchView("inventoryDashboard");
     } else if (task.route === "/inventory/taking") {
       switchView("inventoryTaking");
     } else if (
@@ -357,6 +373,10 @@
         <AssetManager on:change={handleAdminChange} />
       {:else if isAdmin && viewMode === "inventoryConditions"}
         <InventoryConditionManager on:change={handleAdminChange} />
+      {:else if isAdmin && viewMode === "inventoryCampaigns"}
+        <InventoryCampaignManager on:change={handleAdminChange} />
+      {:else if viewMode === "inventoryDashboard"}
+        <InventoryDashboard />
       {:else if viewMode === "inventoryTaking"}
         <InventoryTaking />
       {:else}

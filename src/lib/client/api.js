@@ -127,12 +127,55 @@ export async function lookupInventoryAsset(code, { includeHistory = true } = {})
   return data || {};
 }
 
+export async function fetchInventoryDashboard(options = {}) {
+  const params = new URLSearchParams();
+  if (options.campaignId) params.set("campaignId", options.campaignId);
+  const qs = params.toString();
+  const data = await apiFetch(`/api/inventory/dashboard${qs ? `?${qs}` : ""}`);
+  return data || {};
+}
+
 export async function submitInventoryCheck(payload) {
   const data = await apiFetch("/api/inventory/checks", {
     method: "POST",
     body: payload,
   });
   return data?.check || null;
+}
+
+export async function listInventoryCampaigns(options = {}) {
+  const params = new URLSearchParams();
+  if (options.activeOnly) params.set("activeOnly", "true");
+  if (options.includeScheduled === false) params.set("includeScheduled", "false");
+  if (Array.isArray(options.status)) {
+    for (const status of options.status) {
+      if (status) params.append("status", status);
+    }
+  }
+  const qs = params.toString();
+  const data = await apiFetch(`/api/inventory/campaigns${qs ? `?${qs}` : ""}`);
+  return data?.campaigns || [];
+}
+
+export async function getInventoryCampaign(id) {
+  const data = await apiFetch(`/api/inventory/campaigns/${id}`);
+  return data?.campaign || null;
+}
+
+export async function createInventoryCampaign(payload) {
+  const data = await apiFetch("/api/inventory/campaigns", {
+    method: "POST",
+    body: payload,
+  });
+  return data?.campaign || null;
+}
+
+export async function updateInventoryCampaign(id, payload) {
+  const data = await apiFetch(`/api/inventory/campaigns/${id}`, {
+    method: "PATCH",
+    body: payload,
+  });
+  return data?.campaign || null;
 }
 
 export async function listAssetCategories() {

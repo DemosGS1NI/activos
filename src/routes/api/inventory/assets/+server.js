@@ -74,6 +74,13 @@ function serializeCheck(row) {
           name: row.new_responsible_name || null,
         }
       : null,
+    campaign: row.campaign_id
+      ? {
+          id: row.campaign_id,
+          name: row.campaign_name || null,
+          status: row.campaign_status || null,
+        }
+      : null,
   };
 }
 
@@ -162,13 +169,17 @@ export async function GET(event) {
              ic.previous_responsible_id,
              pr.name AS previous_responsible_name,
              ic.new_responsible_id,
-             nr.name AS new_responsible_name
+             nr.name AS new_responsible_name,
+             ic.campaign_id,
+             camp.name AS campaign_name,
+             camp.status AS campaign_status
       FROM inventory_checks ic
       LEFT JOIN users u ON u.id = ic.checked_by
       LEFT JOIN locations l ON l.id = ic.location_id
       LEFT JOIN inventory_conditions c ON c.id = ic.condition_id
       LEFT JOIN responsibles pr ON pr.id = ic.previous_responsible_id
       LEFT JOIN responsibles nr ON nr.id = ic.new_responsible_id
+      LEFT JOIN inventory_campaigns camp ON camp.id = ic.campaign_id
       WHERE ic.asset_id = ${assetId}
       ORDER BY ic.checked_at DESC
       LIMIT ${HISTORY_LIMIT}

@@ -3,6 +3,7 @@
   import {
     lookupInventoryAsset,
     submitInventoryCheck,
+    listInventoryCampaigns,
   } from "../client/api.js";
   import { icons } from "./icons.js";
 
@@ -15,13 +16,16 @@
   let locations = [];
   let responsibles = [];
   let recentChecks = [];
+  let campaigns = [];
 
   let loadingAsset = false;
   let submitting = false;
+  let campaignsLoading = false;
 
   let lookupError = "";
   let submitError = "";
   let successMessage = "";
+  let campaignError = "";
 
   let selectedConditionId = "";
   let comment = "";
@@ -31,9 +35,12 @@
 
   let editingResponsible = false;
   let selectedResponsibleId = "";
+  let selectedCampaignId = "";
+  let campaignsInitialized = false;
 
   onMount(() => {
     focusInput();
+    void loadCampaigns({ silent: false });
   });
 
   function focusInput() {
@@ -41,6 +48,53 @@
       codeInput.focus();
       codeInput.select?.();
     }
+  }
+
+  async function loadCampaigns({ silent = false } = {}) {
+    campaignsLoading = true;
+    if (!silent) {
+      campaignError = "";
+    }
+
+    try {
+      const result = await listInventoryCampaigns({ activeOnly: true });
+      const items = Array.isArray(result) ? result : [];
+      campaigns = items;
+      campaignError = "";
+
+      const previous = selectedCampaignId;
+      const hasPrevious = previous && items.some((campaign) => campaign.id === previous);
+      if (!hasPrevious) {
+        if (!campaignsInitialized && items.length === 1) {
+          selectedCampaignId = items[0].id;
+        } else if (previous) {
+          selectedCampaignId = "";
+        }
+      }
+      if (!campaignsInitialized) {
+        campaignsInitialized = true;
+      }
+    } catch (err) {
+      if (!silent) {
+        campaignError = err?.message || "No fue posible cargar las campañas activas";
+      }
+    } finally {
+      campaignsLoading = false;
+    }
+  }
+
+  function refreshCampaigns() {
+    loadCampaigns({ silent: false });
+  }
+
+  function campaignStatusSuffix(campaign) {
+    if (!campaign) return "";
+    if (campaign.isActive) return " (Activa)";
+    if (campaign.isScheduled) return " (Programada)";
+    const status = typeof campaign.status === "string" ? campaign.status.trim() : "";
+    if (!status) return "";
+    const formatted = status.charAt(0).toUpperCase() + status.slice(1);
+    return ` (${formatted})`;
   }
 
   function clearState() {
@@ -160,10 +214,19 @@
       payload.newResponsibleId = selectedResponsibleId || null;
     }
 
+    if (selectedCampaignId) {
+      payload.campaignId = selectedCampaignId;
+    }
+
     submitting = true;
     try {
       await submitInventoryCheck(payload);
-      successMessage = "Control de inventario registrado";
+      const activeCampaign = selectedCampaignId
+        ? campaigns.find((item) => item.id === selectedCampaignId)
+        : null;
+      successMessage = activeCampaign
+        ? `Control de inventario registrado para la campaña ${activeCampaign.name}`
+        : "Control de inventario registrado";
       await loadAssetByCode(lastScannedCode, { silent: true });
       comment = "";
       selectedConditionId = "";
@@ -204,6 +267,8 @@
     "inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:opacity-60";
   const secondaryButtonClass =
     "inline-flex items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-60";
+  const tertiaryButtonClass =
+    "text-xs font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline disabled:opacity-60";
 </script>
 
 <div class="space-y-6">
@@ -225,6 +290,45 @@
           placeholder="Escanea o escribe el código"
           disabled={loadingAsset || submitting}
         />
+      </div>
+      <div class="space-y-1">
+        <div class="flex items-center justify-between">
+          <label for="inventory-campaign" class="text-sm font-medium text-sky-900"
+            >Campaña</label
+          >
+          <button
+            type="button"
+            class={tertiaryButtonClass}
+            on:click={refreshCampaigns}
+            disabled={campaignsLoading || submitting || loadingAsset}
+          >
+            Actualizar
+          </button>
+        </div>
+        {#if campaignsLoading}
+          <div class="text-sm text-sky-600">Cargando campañas…</div>
+        {:else if !campaigns.length}
+          <div class="rounded-md border border-dashed border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-700">
+            No hay campañas activas en este momento. Puedes registrar controles sin campaña.
+          </div>
+        {:else}
+          <select
+            id="inventory-campaign"
+            bind:value={selectedCampaignId}
+            class="w-full rounded-md border border-sky-300 px-3 py-2 text-sm text-sky-900 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            disabled={campaignsLoading || submitting || loadingAsset}
+          >
+            <option value="">Sin campaña</option>
+            {#each campaigns as campaign}
+              <option value={campaign.id}>
+                {campaign.name}{campaignStatusSuffix(campaign)}
+              </option>
+            {/each}
+          </select>
+        {/if}
+        {#if campaignError}
+          <p class="text-sm text-rose-600">{campaignError}</p>
+        {/if}
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <button
@@ -347,6 +451,11 @@
               {#if lastCheck.checked_by_name}
                 <p>
                   <strong>Registrado por:&nbsp;</strong>{lastCheck.checked_by_name}
+                </p>
+              {/if}
+              {#if lastCheck.campaign}
+                <p>
+                  <strong>Campaña:&nbsp;</strong>{lastCheck.campaign.name}
                 </p>
               {/if}
               {#if lastCheck.comment}

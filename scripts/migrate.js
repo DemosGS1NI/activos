@@ -318,6 +318,35 @@ async function postInitPatches() {
   `;
 
   await pool.sql`
+    CREATE TABLE IF NOT EXISTS inventory_campaigns (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'draft',
+      scope_filters JSONB NOT NULL DEFAULT '{}'::jsonb,
+      starts_at TIMESTAMPTZ,
+      ends_at TIMESTAMPTZ,
+      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+      progress_snapshot JSONB,
+      created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      archived_at TIMESTAMPTZ
+    )
+  `;
+
+  await pool.sql`
+    CREATE INDEX IF NOT EXISTS idx_inventory_campaigns_status
+      ON inventory_campaigns (status)
+  `;
+
+  await pool.sql`
+    CREATE INDEX IF NOT EXISTS idx_inventory_campaigns_schedule
+      ON inventory_campaigns (starts_at, ends_at)
+  `;
+
+  await pool.sql`
     CREATE TABLE IF NOT EXISTS inventory_checks (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       asset_id UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
@@ -330,9 +359,20 @@ async function postInitPatches() {
       previous_responsible_id UUID REFERENCES responsibles(id) ON DELETE SET NULL,
       new_responsible_id UUID REFERENCES responsibles(id) ON DELETE SET NULL,
       responsible_updated BOOLEAN NOT NULL DEFAULT false,
+      campaign_id UUID REFERENCES inventory_campaigns(id) ON DELETE SET NULL,
       metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `;
+
+  await pool.sql`
+    ALTER TABLE inventory_checks
+    ADD COLUMN IF NOT EXISTS campaign_id UUID REFERENCES inventory_campaigns(id) ON DELETE SET NULL
+  `;
+
+  await pool.sql`
+    CREATE INDEX IF NOT EXISTS idx_inventory_checks_campaign_id
+      ON inventory_checks (campaign_id)
   `;
 
   await pool.sql`

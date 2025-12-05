@@ -3,6 +3,7 @@ import { query } from "../../../../lib/db.js";
 import { requirePermission } from "../../../../lib/rbac.js";
 import { normalizeString, isUuid, toInteger } from "../../../../lib/validators.js";
 import { fetchAsset, ensureExists } from "../../../assets/_helpers.js";
+import { computeIsActive } from "../campaigns/_helpers.js";
 
 function sanitizeMetadata(value) {
   if (value === undefined || value === null) return {};
@@ -95,6 +96,29 @@ export async function POST(event) {
   const ip = typeof event.getClientAddress === "function" ? event.getClientAddress() : null;
   if (ip && !metadata.clientIp) metadata.clientIp = ip;
 
+  let campaignId = null;
+  if (Object.prototype.hasOwnProperty.call(payload ?? {}, "campaignId")) {
+    const candidate = payload.campaignId;
+    if (candidate !== null && candidate !== "" && candidate !== undefined) {
+      const value = String(candidate);
+      if (!isUuid(value)) return badRequest("campaignId inválido");
+      const { rows } = await query`
+        SELECT id, status, starts_at, ends_at
+        FROM inventory_campaigns
+        WHERE id = ${value}
+        LIMIT 1
+      `;
+      if (!rows.length) return badRequest("Campaña no encontrada");
+      const campaignRow = rows[0];
+      const statusLower = typeof campaignRow.status === "string" ? campaignRow.status.toLowerCase() : "";
+      const activeNow = computeIsActive(campaignRow);
+      if (!activeNow && statusLower !== "scheduled" && statusLower !== "active") {
+        return badRequest("La campaña no está activa");
+      }
+      campaignId = campaignRow.id;
+    }
+  }
+
   const now = new Date();
 
   await query`BEGIN`;
@@ -122,6 +146,7 @@ export async function POST(event) {
         previous_responsible_id,
         new_responsible_id,
         responsible_updated,
+        campaign_id,
         metadata,
         created_at
       )
@@ -136,10 +161,11 @@ export async function POST(event) {
         ${previousResponsibleId},
         ${newResponsibleId},
         ${responsibleUpdated},
+        ${campaignId},
         ${metadata},
         ${now}
       )
-      RETURNING id, checked_at, responsible_updated
+      RETURNING id, checked_at, responsible_updated, campaign_id
     `;
 
     await query`COMMIT`;
@@ -151,6 +177,7 @@ export async function POST(event) {
           id: inserted.id,
           checkedAt: inserted.checked_at instanceof Date ? inserted.checked_at.toISOString() : inserted.checked_at,
           responsibleUpdated: Boolean(inserted.responsible_updated),
+          campaignId: inserted.campaign_id || null,
         },
       },
       {},

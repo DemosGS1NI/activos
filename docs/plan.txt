@@ -43,3 +43,9 @@ Upcoming Tasks
 - Implement CRUD interfaces and API endpoints for categories.
 - Implement CRUD interfaces and API endpoints for tasks.
 - Implement CRUD interfaces and API endpoints for role-task mappings.
+
+Completed Tasks
+
+- Design inventory campaign schema with JSON scope filters and campaign metadata.
+- Expose campaign APIs (list, details, status transitions) for admin and inventory teams.
+- Link inventory checks with active campaigns and surface selection in the capture UI.
