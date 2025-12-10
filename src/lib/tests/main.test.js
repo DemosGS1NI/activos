@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword, needsRehash } from '../password.js';
 import { createMenu } from '../menu.js';
 import { createRbac } from '../rbac.js';
 import { query } from '../db.js';
+import { ASSET_IMPORT_TEMPLATE_VERSION } from '../imports/constants.js';
 
 // Import server route handlers
 import { POST as registerPOST } from '../../routes/auth/register/+server.js';
@@ -20,6 +21,8 @@ import { GET as menuGroupGET, PATCH as menuGroupPATCH, DELETE as menuGroupDELETE
 import { GET as tasksGET, POST as tasksPOST } from '../../routes/tasks/+server.js';
 import { GET as taskGET, PATCH as taskPATCH, DELETE as taskDELETE } from '../../routes/tasks/[id]/+server.js';
 import { GET as roleTasksGET, POST as roleTasksPOST, DELETE as roleTasksDELETE } from '../../routes/role_tasks/+server.js';
+import { POST as assetImportPOST } from '../../routes/assets/import/+server.js';
+import { utils as xlsxUtils, write as xlsxWrite } from 'xlsx';
 
 // Ensure the environment is set up for tests
 beforeAll(() => {
@@ -189,12 +192,40 @@ describe('Integration Tests', () => {
   }, 60000);
   const testUsers = [];
   const tempMenuGroupIds = new Set();
+  const importCleanup = {
+    assetTags: [],
+    categoryCodes: [],
+    statusCodes: [],
+    depCodes: [],
+    batchIds: []
+  };
   let adminRoleId;
   let createdAdminRole = false;
 
   beforeAll(async () => {
     // Ensure revoked_tokens table exists for integration tests
     await query`CREATE TABLE IF NOT EXISTS revoked_tokens ( jti TEXT PRIMARY KEY, user_id UUID NOT NULL, revoked_at TIMESTAMPTZ NOT NULL DEFAULT now(), exp TIMESTAMPTZ )`;
+    await query`
+      CREATE TABLE IF NOT EXISTS imports_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        batch_id UUID NOT NULL,
+        sheet_name TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        template_version TEXT NOT NULL,
+        preview BOOLEAN NOT NULL DEFAULT false,
+        status TEXT NOT NULL DEFAULT 'completed',
+        totals JSONB NOT NULL DEFAULT '{}'::jsonb,
+        warnings JSONB NOT NULL DEFAULT '[]'::jsonb,
+        errors JSONB NOT NULL DEFAULT '[]'::jsonb,
+        duplicates JSONB NOT NULL DEFAULT '[]'::jsonb,
+        metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+        duration_ms INTEGER,
+        requested_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `;
+    await query`CREATE INDEX IF NOT EXISTS idx_imports_log_batch_id ON imports_log (batch_id)`;
+    await query`CREATE INDEX IF NOT EXISTS idx_imports_log_created_at ON imports_log (created_at DESC)`;
   });
 
   beforeAll(async () => {
@@ -222,6 +253,21 @@ describe('Integration Tests', () => {
     for (const id of tempMenuGroupIds) {
       await query`DELETE FROM menu_groups WHERE id = ${id}`;
     }
+    for (const batchId of importCleanup.batchIds) {
+      await query`DELETE FROM imports_log WHERE batch_id = ${batchId}`;
+    }
+    for (const tag of importCleanup.assetTags) {
+      await query`DELETE FROM assets WHERE asset_tag = ${tag}`;
+    }
+    for (const code of importCleanup.categoryCodes) {
+      await query`DELETE FROM asset_categories WHERE code = ${code}`;
+    }
+    for (const code of importCleanup.statusCodes) {
+      await query`DELETE FROM asset_statuses WHERE code = ${code}`;
+    }
+    for (const code of importCleanup.depCodes) {
+      await query`DELETE FROM depreciation_methods WHERE code = ${code}`;
+    }
     if (createdAdminRole && adminRoleId) {
       await query`DELETE FROM role_tasks WHERE role_id = ${adminRoleId}`;
       await query`UPDATE users SET role_id = NULL WHERE role_id = ${adminRoleId}`;
@@ -243,6 +289,64 @@ describe('Integration Tests', () => {
       params,
       locals: { user: { id: 'admin-test', role_id: adminRoleId, role_name: 'admin' } }
     };
+  }
+
+  const IMPORT_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+  function buildImportWorkbook(suffix) {
+    const workbook = xlsxUtils.book_new();
+    const depCode = `DEP_${suffix}`.toUpperCase();
+    const categoryCode = `CAT_${suffix}`.toUpperCase();
+    const statusCode = `STS_${suffix}`.toUpperCase();
+    const assetTag = `AST_${suffix}`.toUpperCase();
+
+    const addSheet = (name, rows) => {
+      const sheet = xlsxUtils.aoa_to_sheet(rows);
+      xlsxUtils.book_append_sheet(workbook, sheet, name);
+    };
+
+    addSheet('depreciation_methods', [
+      ['code', 'name', 'default_period'],
+      [depCode, `Método ${suffix}`, 'mensual']
+    ]);
+
+    addSheet('asset_categories', [
+      ['code', 'name', 'default_depreciation_method_code'],
+      [categoryCode, `Categoría ${suffix}`, depCode]
+    ]);
+
+    addSheet('asset_statuses', [
+      ['code', 'name', 'is_active'],
+      [statusCode, `Estado ${suffix}`, true]
+    ]);
+
+    addSheet('assets', [
+      ['asset_tag', 'name', 'asset_category_code', 'asset_status_code', 'depreciation_method_code'],
+      [assetTag, `Activo ${suffix}`, categoryCode, statusCode, depCode]
+    ]);
+
+    const buffer = xlsxWrite(workbook, { bookType: 'xlsx', type: 'buffer' });
+    const fileName = `import-${suffix}.xlsx`;
+    return { buffer, fileName, depCode, categoryCode, statusCode, assetTag };
+  }
+
+  async function executeAssetImport({ buffer, fileName, preview }) {
+    const file = new File([buffer], fileName, { type: IMPORT_MIME });
+    const form = new FormData();
+    form.append('file', file);
+    if (preview === false) {
+      form.append('preview', 'false');
+    } else if (preview === true) {
+      form.append('preview', 'true');
+    }
+    const request = new Request('http://internal/assets/import', {
+      method: 'POST',
+      body: form
+    });
+    return assetImportPOST({
+      request,
+      locals: { user: { id: null, role_id: adminRoleId, role_name: 'admin' } }
+    });
   }
 
   test('register, login, and refresh flow', async () => {
@@ -644,5 +748,61 @@ describe('Integration Tests', () => {
       await query`DELETE FROM menu_groups WHERE id = ${menuGroupId}`;
       tempMenuGroupIds.delete(menuGroupId);
     }
+  });
+
+  test('assets import validates workbook in preview mode', async () => {
+    const suffix = `PREV${Date.now()}`;
+    const workbook = buildImportWorkbook(suffix);
+    const response = await executeAssetImport({ buffer: workbook.buffer, fileName: workbook.fileName, preview: true });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.data.plantilla).toBe(ASSET_IMPORT_TEMPLATE_VERSION);
+    const summary = body.data.resumen;
+    expect(summary.templateVersion).toBe(ASSET_IMPORT_TEMPLATE_VERSION);
+    expect(summary.preview).toBe(true);
+    expect(summary.mode).toBe('preview');
+    expect(summary.totals.inserted).toBe(0);
+    expect(summary.sheets.assets.status).toBe('validated');
+    const assetRow = summary.sheets.assets.rows[0];
+    expect(assetRow.status).toBe('validated');
+    expect(assetRow.key).toBe(workbook.assetTag);
+
+    const logs = await query`SELECT preview, status FROM imports_log WHERE batch_id = ${summary.batchId}`;
+    expect(logs.rows.length).toBeGreaterThan(0);
+    expect(logs.rows.every((row) => row.preview === true)).toBe(true);
+    importCleanup.batchIds.push(summary.batchId);
+  });
+
+  test('assets import persists workbook in commit mode', async () => {
+    const suffix = `COM${Date.now()}`;
+    const workbook = buildImportWorkbook(suffix);
+    const response = await executeAssetImport({ buffer: workbook.buffer, fileName: workbook.fileName, preview: false });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.data.plantilla).toBe(ASSET_IMPORT_TEMPLATE_VERSION);
+    const summary = body.data.resumen;
+    expect(summary.templateVersion).toBe(ASSET_IMPORT_TEMPLATE_VERSION);
+    expect(summary.preview).toBe(false);
+    expect(summary.mode).toBe('commit');
+    expect(summary.totals.inserted).toBe(4);
+    expect(summary.sheets.assets.status).toBe('committed');
+    const assetRow = summary.sheets.assets.rows[0];
+    expect(assetRow.status).toBe('inserted');
+    expect(assetRow.key).toBe(workbook.assetTag);
+
+    const assetQuery = await query`SELECT asset_tag FROM assets WHERE asset_tag = ${workbook.assetTag}`;
+    expect(assetQuery.rows.length).toBe(1);
+    importCleanup.assetTags.push(workbook.assetTag);
+    importCleanup.categoryCodes.push(workbook.categoryCode);
+    importCleanup.statusCodes.push(workbook.statusCode);
+    importCleanup.depCodes.push(workbook.depCode);
+
+    const logs = await query`SELECT preview, status FROM imports_log WHERE batch_id = ${summary.batchId}`;
+    expect(logs.rows.length).toBeGreaterThan(0);
+    expect(logs.rows.every((row) => row.preview === false)).toBe(true);
+    expect(logs.rows.some((row) => row.status.startsWith('committed'))).toBe(true);
+    importCleanup.batchIds.push(summary.batchId);
   });
 });

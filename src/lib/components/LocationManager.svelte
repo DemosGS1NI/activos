@@ -178,6 +178,20 @@
     };
   }
 
+  function displayValue(value) {
+    if (value === null || value === undefined) return "—";
+    const text = value.toString().trim();
+    return text.length ? text : "—";
+  }
+
+  function coordinateDisplay(value) {
+    return value === null || value === undefined ? "—" : value;
+  }
+
+  function actionCellClass(isEditing) {
+    return `${DATA_CELL_CLASS} sticky right-0 text-right border-l border-sky-200 ${isEditing ? "bg-white" : "bg-slate-50"} shadow-[inset_1px_0_0_rgba(15,23,42,0.1)]`;
+  }
+
   async function saveLocation() {
     submitting = true;
     resetMessage();
@@ -265,7 +279,7 @@
 
   <div class="rounded-lg border border-sky-200 bg-slate-50 shadow-sm">
     <div class="overflow-x-auto">
-      <table class="min-w-full border-collapse">
+      <table class="w-full min-w-[1200px] border-collapse">
         <thead class="bg-sky-200/80 text-sky-900">
           <tr
             class="border-b border-sky-200 text-left text-xs font-semibold tracking-wide"
@@ -307,6 +321,9 @@
               </button>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
+              <span class={HEADER_LABEL_CLASS}>Dirección</span>
+            </th>
+            <th class="border-r border-sky-200 px-3 py-2">
               <button
                 type="button"
                 class={HEADER_BUTTON_CLASS}
@@ -314,6 +331,18 @@
               >
                 Ciudad
                 {#if sortKey === "city"}
+                  <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
+                {/if}
+              </button>
+            </th>
+            <th class="border-r border-sky-200 px-3 py-2">
+              <button
+                type="button"
+                class={HEADER_BUTTON_CLASS}
+                on:click={() => toggleSort("region")}
+              >
+                Región/Estado
+                {#if sortKey === "region"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
               </button>
@@ -331,12 +360,42 @@
               </button>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>Dirección</span>
+              <button
+                type="button"
+                class={HEADER_BUTTON_CLASS}
+                on:click={() => toggleSort("postal_code")}
+              >
+                Código postal
+                {#if sortKey === "postal_code"}
+                  <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
+                {/if}
+              </button>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>Coordenadas</span>
+              <button
+                type="button"
+                class={HEADER_BUTTON_CLASS}
+                on:click={() => toggleSort("latitude")}
+              >
+                Latitud
+                {#if sortKey === "latitude"}
+                  <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
+                {/if}
+              </button>
             </th>
-            <th class="px-3 py-2 text-right">
+            <th class="border-r border-sky-200 px-3 py-2">
+              <button
+                type="button"
+                class={HEADER_BUTTON_CLASS}
+                on:click={() => toggleSort("longitude")}
+              >
+                Longitud
+                {#if sortKey === "longitude"}
+                  <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
+                {/if}
+              </button>
+            </th>
+            <th class="sticky right-0 z-10 bg-sky-200/90 px-3 py-2 text-right shadow-[inset_1px_0_0_rgba(15,23,42,0.18)] backdrop-blur">
               <span class={HEADER_LABEL_CLASS}>Acciones</span>
             </th>
           </tr>
@@ -345,7 +404,7 @@
           {#if loading}
             <tr>
               <td
-                colspan="8"
+                colspan="11"
                 class="px-3 py-6 text-center text-sm text-sky-900"
               >
                 Cargando ubicaciones…
@@ -381,63 +440,63 @@
                   {/each}
                 </select>
               </td>
-              <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                <input
-                  class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                  bind:value={draft.city}
-                  placeholder="Ciudad"
-                  disabled={submitting}
-                />
-              </td>
-              <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                <input
-                  class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                  bind:value={draft.country}
-                  placeholder="País"
-                  disabled={submitting}
-                />
-              </td>
-              <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                <div class="space-y-2">
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.address_line}
-                    placeholder="Dirección"
-                    disabled={submitting}
-                  />
-                  <div class="grid grid-cols-2 gap-2">
-                    <input
-                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                      bind:value={draft.region}
-                      placeholder="Región"
-                      disabled={submitting}
-                    />
-                    <input
-                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                      bind:value={draft.postal_code}
-                      placeholder="Código postal"
-                      disabled={submitting}
-                    />
-                  </div>
-                </div>
-              </td>
-              <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                <div class="grid grid-cols-1 gap-2">
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.latitude}
-                    placeholder="Latitud"
-                    disabled={submitting}
-                  />
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.longitude}
-                    placeholder="Longitud"
-                    disabled={submitting}
-                  />
-                </div>
-              </td>
-              <td class={`${DATA_CELL_CLASS} text-right`}>
+                        <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                          <input
+                            class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                            bind:value={draft.address_line}
+                            placeholder="Dirección"
+                            disabled={submitting}
+                          />
+                        </td>
+                        <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                          <input
+                            class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                            bind:value={draft.city}
+                            placeholder="Ciudad"
+                            disabled={submitting}
+                          />
+                        </td>
+                        <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                          <input
+                            class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                            bind:value={draft.region}
+                            placeholder="Región/Estado"
+                            disabled={submitting}
+                          />
+                        </td>
+                        <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                          <input
+                            class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                            bind:value={draft.country}
+                            placeholder="País"
+                            disabled={submitting}
+                          />
+                        </td>
+                        <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                          <input
+                            class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                            bind:value={draft.postal_code}
+                            placeholder="Código postal"
+                            disabled={submitting}
+                          />
+                        </td>
+                        <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                          <input
+                            class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                            bind:value={draft.latitude}
+                            placeholder="Latitud"
+                            disabled={submitting}
+                          />
+                        </td>
+                        <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                          <input
+                            class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                            bind:value={draft.longitude}
+                            placeholder="Longitud"
+                            disabled={submitting}
+                          />
+                        </td>
+                        <td class={actionCellClass(true)}>
                 <div class="flex justify-end gap-2">
                   <button
                     class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-400 disabled:opacity-60"
@@ -494,63 +553,63 @@
                     {/each}
                   </select>
                 </td>
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.city}
-                    placeholder="Ciudad"
-                    disabled={submitting}
-                  />
-                </td>
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.country}
-                    placeholder="País"
-                    disabled={submitting}
-                  />
-                </td>
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <div class="space-y-2">
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
                     <input
                       class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
                       bind:value={draft.address_line}
                       placeholder="Dirección"
                       disabled={submitting}
                     />
-                    <div class="grid grid-cols-2 gap-2">
-                      <input
-                        class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                        bind:value={draft.region}
-                        placeholder="Región"
-                        disabled={submitting}
-                      />
-                      <input
-                        class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                        bind:value={draft.postal_code}
-                        placeholder="Código postal"
-                        disabled={submitting}
-                      />
-                    </div>
-                  </div>
-                </td>
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <div class="grid grid-cols-1 gap-2">
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <input
+                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      bind:value={draft.city}
+                      placeholder="Ciudad"
+                      disabled={submitting}
+                    />
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <input
+                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      bind:value={draft.region}
+                      placeholder="Región/Estado"
+                      disabled={submitting}
+                    />
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <input
+                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      bind:value={draft.country}
+                      placeholder="País"
+                      disabled={submitting}
+                    />
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <input
+                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      bind:value={draft.postal_code}
+                      placeholder="Código postal"
+                      disabled={submitting}
+                    />
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
                     <input
                       class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
                       bind:value={draft.latitude}
                       placeholder="Latitud"
                       disabled={submitting}
                     />
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
                     <input
                       class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
                       bind:value={draft.longitude}
                       placeholder="Longitud"
                       disabled={submitting}
                     />
-                  </div>
-                </td>
-                <td class={`${DATA_CELL_CLASS} text-right`}>
+                  </td>
+                  <td class={actionCellClass(true)}>
                   <div class="flex justify-end gap-2">
                     <button
                       class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-400 disabled:opacity-60"
@@ -582,36 +641,27 @@
                   {item.parent_name || "—"}
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  {item.city || "—"}
+                  {displayValue(item.address_line)}
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  {item.country || "—"}
+                  {displayValue(item.city)}
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <div class="space-y-1">
-                    <div>{item.address_line || "—"}</div>
-                    <div class="text-xs text-sky-700">
-                      {#if item.region}
-                        {item.region}
-                      {/if}
-                      {#if item.postal_code}
-                        {item.region ? " · " : ""}{item.postal_code}
-                      {/if}
-                    </div>
-                  </div>
+                  {displayValue(item.region)}
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  {#if item.latitude !== null && item.latitude !== undefined}
-                    <div>Lat: {item.latitude}</div>
-                  {/if}
-                  {#if item.longitude !== null && item.longitude !== undefined}
-                    <div>Lon: {item.longitude}</div>
-                  {/if}
-                  {#if item.latitude === null && item.longitude === null}
-                    —
-                  {/if}
+                  {displayValue(item.country)}
                 </td>
-                <td class={`${DATA_CELL_CLASS} text-right`}>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  {displayValue(item.postal_code)}
+                </td>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  {coordinateDisplay(item.latitude)}
+                </td>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  {coordinateDisplay(item.longitude)}
+                </td>
+                <td class={actionCellClass(false)}>
                   <div class="flex justify-end gap-2">
                     <button
                       class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50"
@@ -639,7 +689,7 @@
           {#if !loading && !locations.length && !creating}
             <tr>
               <td
-                colspan="8"
+                colspan="11"
                 class="px-3 py-6 text-center text-sm text-sky-900"
               >
                 No hay ubicaciones registradas.

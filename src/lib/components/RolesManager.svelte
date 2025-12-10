@@ -152,7 +152,7 @@
       aria-label="Nuevo rol"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo rol</span>
+      <span>Nuevo</span>
     </button>
   </div>
 
@@ -181,7 +181,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("name")}
               >
-                NOMBRE
+                Nombre
                 {#if sortKey === "name"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -193,14 +193,14 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("description")}
               >
-                DESCRIPCIÓN
+                Descripción
                 {#if sortKey === "description"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
               </button>
             </th>
             <th class="px-3 py-2 text-right">
-              <span class={HEADER_LABEL_CLASS}>ACCIONES</span>
+              <span class={HEADER_LABEL_CLASS}>Acciones</span>
             </th>
           </tr>
         </thead>

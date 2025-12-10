@@ -219,7 +219,7 @@
       aria-label="Nueva condición de inventario"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nueva condición</span>
+      <span>Nuevo</span>
     </button>
   </div>
 
@@ -488,7 +488,7 @@
                 <td class={`${DATA_CELL_CLASS} text-right`}>
                   <div class="flex justify-end gap-2">
                     <button
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500 text-white shadow-sm transition hover:bg-indigo-400 disabled:opacity-60"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-60"
                       on:click={() => startEdit(item)}
                       disabled={submitting}
                       type="button"
@@ -497,7 +497,7 @@
                       {@html icons.edit}
                     </button>
                     <button
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-rose-500 text-white shadow-sm transition hover:bg-rose-400 disabled:opacity-60"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:opacity-60"
                       on:click={() => removeCondition(item)}
                       disabled={submitting}
                       type="button"

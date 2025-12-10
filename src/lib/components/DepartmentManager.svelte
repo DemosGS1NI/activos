@@ -205,7 +205,7 @@
       aria-label="Nuevo departamento"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo departamento</span>
+      <span>Nuevo</span>
     </button>
   </div>
 

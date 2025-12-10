@@ -87,6 +87,11 @@ async function postInitPatches() {
   `;
 
   await pool.sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_asset_statuses_name_unique
+      ON asset_statuses (LOWER(TRIM(name)))
+  `;
+
+  await pool.sql`
     CREATE TABLE IF NOT EXISTS depreciation_methods (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name TEXT NOT NULL,
@@ -97,6 +102,11 @@ async function postInitPatches() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `;
+
+  await pool.sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_depreciation_methods_name_unique
+      ON depreciation_methods (LOWER(TRIM(name)))
   `;
 
   await pool.sql`
@@ -133,6 +143,11 @@ async function postInitPatches() {
   `;
 
   await pool.sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_cost_centers_name_unique
+      ON cost_centers (LOWER(TRIM(name)))
+  `;
+
+  await pool.sql`
     CREATE TABLE IF NOT EXISTS locations (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name TEXT NOT NULL,
@@ -151,6 +166,11 @@ async function postInitPatches() {
   `;
 
   await pool.sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_name_unique
+      ON locations (LOWER(TRIM(name)))
+  `;
+
+  await pool.sql`
     CREATE TABLE IF NOT EXISTS responsibles (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name TEXT NOT NULL,
@@ -160,6 +180,11 @@ async function postInitPatches() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `;
+
+  await pool.sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_responsibles_name_unique
+      ON responsibles (LOWER(TRIM(name)))
   `;
 
   await pool.sql`
@@ -177,6 +202,11 @@ async function postInitPatches() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `;
+
+  await pool.sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_providers_name_unique
+      ON providers (LOWER(TRIM(name)))
   `;
 
   await pool.sql`
@@ -252,6 +282,36 @@ async function postInitPatches() {
       uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,
       uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `;
+
+  await pool.sql`
+    CREATE TABLE IF NOT EXISTS imports_log (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      batch_id UUID NOT NULL,
+      sheet_name TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      template_version TEXT NOT NULL,
+      preview BOOLEAN NOT NULL DEFAULT false,
+      status TEXT NOT NULL DEFAULT 'completed',
+      totals JSONB NOT NULL DEFAULT '{}'::jsonb,
+      warnings JSONB NOT NULL DEFAULT '[]'::jsonb,
+      errors JSONB NOT NULL DEFAULT '[]'::jsonb,
+      duplicates JSONB NOT NULL DEFAULT '[]'::jsonb,
+      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+      duration_ms INTEGER,
+      requested_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
+  await pool.sql`
+    CREATE INDEX IF NOT EXISTS idx_imports_log_batch_id
+      ON imports_log (batch_id)
+  `;
+
+  await pool.sql`
+    CREATE INDEX IF NOT EXISTS idx_imports_log_created_at
+      ON imports_log (created_at DESC)
   `;
 
   // Seed lookup data with Spanish names

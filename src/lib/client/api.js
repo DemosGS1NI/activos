@@ -336,6 +336,38 @@ export async function deleteAsset(id) {
   await apiFetch(`/assets/${id}`, { method: "DELETE" });
 }
 
+export async function fetchAssetImportInfo() {
+  const data = await apiFetch("/assets/import");
+  if (!data) return null;
+  const templateVersion =
+    data.template_version || data.templateVersion || data.plantilla || null;
+  const templatePath =
+    data.template_path ||
+    (templateVersion ? `/templates/asset-import-v${templateVersion}.xlsx` : null);
+  return {
+    templateVersion,
+    templatePath,
+    maxFileSizeBytes: data.max_file_size_bytes ?? null,
+    maxAssetRows: data.max_asset_rows ?? null,
+  };
+}
+
+export async function submitAssetImport({ file, preview = true, clearTables = false }) {
+  if (!(file instanceof File)) {
+    throw new Error("Debes adjuntar un archivo .xlsx válido");
+  }
+  const form = new FormData();
+  form.append("file", file);
+  form.append("preview", preview ? "true" : "false");
+  form.append("clearTables", clearTables ? "true" : "false");
+  const data = await apiFetch("/assets/import", { method: "POST", body: form });
+  if (!data) return null;
+  return {
+    resumen: data.resumen || null,
+    plantilla: data.plantilla || null,
+  };
+}
+
 export async function listTasks() {
   const data = await apiFetch("/tasks");
   return data?.tasks || [];

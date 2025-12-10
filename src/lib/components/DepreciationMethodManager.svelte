@@ -193,7 +193,7 @@
       aria-label="Nuevo método de depreciación"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo método</span>
+      <span>Nuevo</span>
     </button>
   </div>
 

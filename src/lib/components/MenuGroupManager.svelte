@@ -208,7 +208,7 @@
       aria-label="Nuevo grupo de menú"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo grupo</span>
+      <span>Nuevo</span>
     </button>
   </div>
 
@@ -237,7 +237,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("ord")}
               >
-                ORDEN
+                Orden
                 {#if sortKey === "ord"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -249,7 +249,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("key")}
               >
-                CLAVE
+                Clave
                 {#if sortKey === "key"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -261,20 +261,20 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("title")}
               >
-                TÍTULO
+                Título
                 {#if sortKey === "title"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
               </button>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>DESCRIPCIÓN</span>
+              <span class={HEADER_LABEL_CLASS}>Descripción</span>
             </th>
             <th class="border-r border-sky-200 px-3 py-2 text-center">
-              <span class={HEADER_LABEL_CLASS}>ESTADO</span>
+              <span class={HEADER_LABEL_CLASS}>Estado</span>
             </th>
             <th class="px-3 py-2 text-right">
-              <span class={HEADER_LABEL_CLASS}>ACCIONES</span>
+              <span class={HEADER_LABEL_CLASS}>Acciones</span>
             </th>
           </tr>
         </thead>

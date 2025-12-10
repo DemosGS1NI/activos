@@ -52,18 +52,30 @@ export function createRbac({ queryFunc = defaultQuery } = {}) {
     throw new ResponseError(forbidden('Insufficient role'));
   }
 
-  async function requirePermission(event, permission) {
+  async function requirePermission(event, permissionInput) {
     const user = requireAuth(event);
+
+    const permissionList = (Array.isArray(permissionInput)
+      ? permissionInput
+      : [permissionInput]
+    )
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .filter(Boolean);
+
+    if (!permissionList.length) {
+      throw new ResponseError(forbidden('Missing permission'));
+    }
 
     // Fast path: token-embedded menu (if present)
     try {
+      const allowed = new Set(permissionList);
       const menu = user.menu;
       if (Array.isArray(menu)) {
         for (const cat of menu) {
           if (!cat || !Array.isArray(cat.tasks)) continue;
           for (const t of cat.tasks) {
             if (!t) continue;
-            if (t.key === permission) return user;
+            if (allowed.has(t.key)) return user;
           }
         }
       }
@@ -71,14 +83,26 @@ export function createRbac({ queryFunc = defaultQuery } = {}) {
       // ignore parsing issues and try DB fallback
     }
 
-    // DB fallback: check if user's role has the task with key = permission
+    // DB fallback: check if user's role has any of the requested tasks
     if (!user.role_id) throw new ResponseError(forbidden('Missing permission'));
-    const res = await queryFunc`
-      SELECT 1 FROM role_tasks rt
-      JOIN tasks t ON t.id = rt.task_id
-      WHERE rt.role_id = ${user.role_id} AND t.key = ${permission}
-      LIMIT 1
-    `;
+
+    let res;
+    if (permissionList.length === 1) {
+      res = await queryFunc`
+        SELECT 1 FROM role_tasks rt
+        JOIN tasks t ON t.id = rt.task_id
+        WHERE rt.role_id = ${user.role_id} AND t.key = ${permissionList[0]}
+        LIMIT 1
+      `;
+    } else {
+      res = await queryFunc`
+        SELECT 1 FROM role_tasks rt
+        JOIN tasks t ON t.id = rt.task_id
+        WHERE rt.role_id = ${user.role_id} AND t.key = ANY(${permissionList})
+        LIMIT 1
+      `;
+    }
+
     if (res.rows && res.rows.length) return user;
 
     throw new ResponseError(forbidden('Missing permission'));

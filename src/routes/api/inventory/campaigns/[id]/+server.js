@@ -35,7 +35,7 @@ async function fetchCampaign(id) {
 }
 
 export async function GET(event) {
-  await requirePermission(event, "inventory.check");
+  await requirePermission(event, ["inventory.check", "inventory_campaigns"]);
   const { id } = event.params;
   if (!isUuid(id)) return badRequest("Identificador de campaña inválido");
 

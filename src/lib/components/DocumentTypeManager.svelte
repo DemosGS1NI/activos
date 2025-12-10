@@ -191,7 +191,7 @@
       aria-label="Nuevo tipo de documento"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo tipo</span>
+      <span>Nuevo</span>
     </button>
   </div>
 

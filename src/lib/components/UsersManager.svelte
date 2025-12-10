@@ -243,9 +243,10 @@
       type="button"
       on:click={startCreate}
       disabled={submitting}
+      aria-label="Nuevo usuario"
     >
       <span aria-hidden="true">{@html icons.plus}</span>
-      <span>New user</span>
+      <span>Nuevo</span>
     </button>
   </div>
 
@@ -397,7 +398,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("email")}
               >
-                EMAIL
+                Correo
                 {#if sortKey === "email"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -409,26 +410,26 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("name")}
               >
-                NAME
+                Nombre
                 {#if sortKey === "name"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
               </button>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>ROLE</span>
+              <span class={HEADER_LABEL_CLASS}>Rol</span>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>STATUS</span>
+              <span class={HEADER_LABEL_CLASS}>Estado</span>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>LAST LOGIN</span>
+              <span class={HEADER_LABEL_CLASS}>Último acceso</span>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>FORCE UPDATE</span>
+              <span class={HEADER_LABEL_CLASS}>Forzar actualización</span>
             </th>
             <th class="px-3 py-2 text-right">
-              <span class={HEADER_LABEL_CLASS}>ACTIONS</span>
+              <span class={HEADER_LABEL_CLASS}>Acciones</span>
             </th>
           </tr>
         </thead>
@@ -490,7 +491,7 @@
                   <div class="flex justify-end gap-2">
                     <button
                       type="button"
-                      class="inline-flex items-center justify-center rounded border border-indigo-200 bg-white p-2 text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-50"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-60"
                       on:click={() => startEdit(user)}
                       disabled={submitting}
                       aria-label={`Edit ${user.email}`}
@@ -499,7 +500,7 @@
                     </button>
                     <button
                       type="button"
-                      class="inline-flex items-center justify-center rounded border border-rose-200 bg-white p-2 text-rose-700 transition hover:border-rose-300 hover:bg-rose-50"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:opacity-60"
                       on:click={() => removeUser(user)}
                       disabled={submitting}
                       aria-label={`Delete ${user.email}`}

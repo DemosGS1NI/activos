@@ -241,7 +241,7 @@
       aria-label="Nueva tarea"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nueva tarea</span>
+      <span>Nuevo</span>
     </button>
   </div>
 
@@ -270,7 +270,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("menuGroup")}
               >
-                GRUPO
+                Grupo
                 {#if sortKey === "menuGroup"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -282,7 +282,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("key")}
               >
-                CLAVE
+                Clave
                 {#if sortKey === "key"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -294,7 +294,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("title")}
               >
-                TITULO
+                Título
                 {#if sortKey === "title"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -306,7 +306,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("route")}
               >
-                RUTA
+                Ruta
                 {#if sortKey === "route"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -318,17 +318,17 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("ord")}
               >
-                ORDEN
+                Orden
                 {#if sortKey === "ord"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
               </button>
             </th>
             <th class="border-r border-sky-200 px-3 py-2 text-center">
-              <span class={HEADER_LABEL_CLASS}>ESTADO</span>
+              <span class={HEADER_LABEL_CLASS}>Estado</span>
             </th>
             <th class="px-3 py-2 text-right">
-              <span class={HEADER_LABEL_CLASS}>ACCIONES</span>
+              <span class={HEADER_LABEL_CLASS}>Acciones</span>
             </th>
           </tr>
         </thead>
@@ -577,15 +577,16 @@
                 <td class={`${DATA_CELL_CLASS} text-right`}>
                   <div class="flex justify-end gap-2">
                     <button
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-60"
                       on:click={() => startEdit(task)}
                       type="button"
+                      disabled={submitting}
                       aria-label="Editar tarea"
                     >
                       {@html icons.edit}
                     </button>
                     <button
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:opacity-60"
                       on:click={() => removeTask(task)}
                       type="button"
                       disabled={submitting}

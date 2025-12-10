@@ -24,7 +24,7 @@ function computePercentage(count, total) {
 }
 
 export async function GET(event) {
-  await requirePermission(event, "inventory.check");
+  await requirePermission(event, ["inventory.check", "inventory_dashboard"]);
 
   const params = event.url.searchParams;
   const requestedCampaignId = params.get("campaignId");

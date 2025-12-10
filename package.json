@@ -8,7 +8,9 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"migrate": "node ./scripts/migrate.js",
-		"test": "vitest"
+		"test": "vitest",
+		"generate:template": "node ./scripts/generate-template.js",
+		"generate:sample-import": "node ./scripts/generate-sample-import.js"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-vercel": "^6.1.2",
@@ -20,11 +22,13 @@
 		"svelte": "^5.43.8",
 		"tailwindcss": "^4.1.17",
 		"vite": "^7.2.2",
-		"vitest": "^4.0.13"
+		"vitest": "^4.0.13",
+		"xlsx-js-style": "^1.2.0"
 	},
 	"dependencies": {
 		"@vercel/postgres": "^0.10.0",
 		"jsbarcode": "3.12.1",
-		"qrcode": "1.5.4"
+		"qrcode": "1.5.4",
+		"xlsx": "^0.18.5"
 	}
 }

@@ -221,7 +221,7 @@
       aria-label="Nuevo responsable"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo responsable</span>
+      <span>Nuevo</span>
     </button>
   </div>
 

@@ -24,7 +24,9 @@
   const ALL_OPTION_VALUE = "__ALL__";
 
   const HEADER_LABEL_CLASS = "block font-semibold tracking-wide text-sky-900";
-  const DATA_CELL_CLASS = "px-3 py-2 text-sm text-sky-900";
+  const DATA_CELL_CLASS = "px-3 py-2 text-sm text-sky-900 align-top";
+  const TOOLTIP_CLASS =
+    "pointer-events-none absolute bottom-full right-1/2 translate-x-1/2 translate-y-1 whitespace-nowrap rounded bg-sky-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition group-hover:translate-y-0 group-hover:opacity-100 z-20";
 
   function uniqueStrings(items) {
     return Array.from(
@@ -425,73 +427,70 @@
     return "Sin ventana definida";
   }
 
-  function scopeEntries(filters) {
-    const results = [];
-    if (!filters || typeof filters !== "object") return results;
-
-    const pushKnown = (label, ids, map) => {
-      if (!Array.isArray(ids) || !ids.length) return;
-      const values = ids
-        .map((id) => String(id))
-        .map((id) => map.get(id) || id)
-        .join(", ");
-      if (values) {
-        results.push({ key: label, value: values });
-      }
-    };
-
-    pushKnown("Ubicaciones", filters.locations, locationMap);
-    pushKnown("Tipos de activo", filters.assetCategories, assetCategoryMap);
-    pushKnown("Responsables", filters.responsibles, responsibleMap);
-
-    for (const [key, value] of Object.entries(filters)) {
-      if (key === "locations" || key === "assetCategories" || key === "responsibles") continue;
-      if (Array.isArray(value)) {
-        results.push({ key, value: value.join(", ") });
-      } else if (value && typeof value === "object") {
-        const nested = scopeEntries(value);
-        if (nested.length) {
-          results.push(
-            ...nested.map((entry) => ({
-              key: `${key}.${entry.key}`,
-              value: entry.value,
-            }))
-          );
-        }
-      } else if (value !== undefined && value !== null) {
-        results.push({ key, value: String(value) });
-      }
-    }
-
-    return results;
-  }
-
   function statusActions(campaign) {
     const actions = [];
-    const add = (value, label) => {
+    const add = (value, label, icon) => {
       if (!actions.some((action) => action.value === value)) {
-        actions.push({ value, label });
+        actions.push({ value, label, icon });
       }
     };
 
     if (campaign.status === "paused") {
-      add("active", "Reanudar");
+      add("active", "Reanudar", "play");
     } else if (campaign.status === "completed") {
-      add("active", "Reabrir");
+      add("active", "Reabrir", "play");
     } else if (campaign.status !== "active" && campaign.status !== "archived") {
-      add("active", "Activar");
+      add("active", "Activar", "play");
     }
 
     if (campaign.status === "active") {
-      add("paused", "Pausar");
-      add("completed", "Completar");
+      add("paused", "Pausar", "pause");
+      add("completed", "Completar", "flag");
     }
 
     if (campaign.status !== "archived") {
-      add("archived", "Archivar");
+      add("archived", "Archivar", "archive");
     }
 
     return actions;
+  }
+
+  function displayValue(value) {
+    if (value === null || value === undefined) return "—";
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length ? trimmed : "—";
+    }
+    return String(value);
+  }
+
+  function resolveNames(ids, map) {
+    if (!Array.isArray(ids) || !ids.length) return "—";
+    const labels = ids
+      .map((value) => map.get(String(value)) || String(value))
+      .filter((label) => Boolean(label));
+    return labels.length ? labels.join(", ") : "—";
+  }
+
+  function summarizeMetadata(metadata) {
+    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return "—";
+    const entries = Object.entries(metadata);
+    if (!entries.length) return "—";
+    const summary = entries
+      .slice(0, 4)
+      .map(([key, value]) => `${key}: ${typeof value === "object" ? JSON.stringify(value) : value}`)
+      .join(" | ");
+    return summary.length > 160 ? `${summary.slice(0, 157)}…` : summary;
+  }
+
+  function actionCellClass(isEditing) {
+    return `${DATA_CELL_CLASS} sticky right-0 z-10 min-w-[14rem] overflow-visible text-right border-l border-sky-200 ${isEditing ? "bg-white" : "bg-slate-50"} shadow-[inset_1px_0_rgba(15,23,42,0.1)]`;
+  }
+
+  function displayScopeList(ids, map) {
+    if (!Array.isArray(ids)) return "Todos";
+    if (!ids.length) return "Todos";
+    return resolveNames(ids, map);
   }
 </script>
 
@@ -535,42 +534,51 @@
 
   <div class="rounded-lg border border-sky-200 bg-slate-50 shadow-sm">
     <div class="overflow-x-auto">
-      <table class="min-w-full border-collapse">
+      <table class="w-full min-w-[1300px] table-auto border-collapse">
         <thead class="bg-sky-200/80 text-sky-900">
           <tr class="border-b border-sky-200 text-left text-xs font-semibold tracking-wide">
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>NOMBRE</span>
+              <span class={HEADER_LABEL_CLASS}>Nombre</span>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>DESCRIPCIÓN</span>
+              <span class={HEADER_LABEL_CLASS}>Descripción</span>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>ESTADO</span>
+              <span class={HEADER_LABEL_CLASS}>Estado</span>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>EMPIEZA</span>
+              <span class={HEADER_LABEL_CLASS}>Empieza</span>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>TERMINA</span>
+              <span class={HEADER_LABEL_CLASS}>Termina</span>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>ALCANCE</span>
+              <span class={HEADER_LABEL_CLASS}>Ubicaciones</span>
             </th>
-            <th class="px-3 py-2 text-right">
-              <span class={HEADER_LABEL_CLASS}>ACCIONES</span>
+            <th class="border-r border-sky-200 px-3 py-2">
+              <span class={HEADER_LABEL_CLASS}>Categorías</span>
+            </th>
+            <th class="border-r border-sky-200 px-3 py-2">
+              <span class={HEADER_LABEL_CLASS}>Responsables</span>
+            </th>
+            <th class="border-r border-sky-200 px-3 py-2">
+              <span class={HEADER_LABEL_CLASS}>Metadata</span>
+            </th>
+            <th class="sticky right-0 w-56 border-l border-sky-200 px-3 py-2 text-right shadow-[inset_1px_0_rgba(15,23,42,0.1)]">
+              <span class={HEADER_LABEL_CLASS}>Acciones</span>
             </th>
           </tr>
         </thead>
         <tbody class="text-sm text-sky-900">
           {#if loading}
             <tr>
-              <td colspan="7" class="px-3 py-6 text-center text-sm text-sky-900">
+              <td colspan="10" class="px-3 py-6 text-center text-sm text-sky-900">
                 Cargando campañas…
               </td>
             </tr>
           {:else}
             {#if creating}
-              <tr class="bg-white border-b border-sky-100">
+              <tr class="border-b border-sky-100 bg-white">
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
                   <input
                     class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
@@ -580,24 +588,13 @@
                   />
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <div class="space-y-2">
-                    <textarea
-                      rows="3"
-                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                      bind:value={draft.description}
-                      placeholder="Descripción"
-                      disabled={submitting}
-                    ></textarea>
-                    <div class="space-y-1">
-                      <span class="text-xs font-semibold text-sky-700">Metadata (JSON opcional)</span>
-                      <textarea
-                        rows="4"
-                        class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                        bind:value={draft.metadataText}
-                        disabled={submitting}
-                      ></textarea>
-                    </div>
-                  </div>
+                  <textarea
+                    rows="3"
+                    class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                    bind:value={draft.description}
+                    placeholder="Descripción"
+                    disabled={submitting}
+                  ></textarea>
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
                   <select
@@ -629,98 +626,108 @@
                   />
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <div class="space-y-3">
-                    <div class="space-y-1">
-                      <span class="text-xs font-semibold text-sky-700">Ubicaciones</span>
-                      {#if referenceLoading}
-                        <div class="rounded border border-dashed border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-700">
-                          Cargando…
-                        </div>
-                      {:else}
-                        <select
-                          multiple
-                          size={Math.min(5, Math.max(locationOptions.length + 1, 4))}
-                          bind:value={draft.selectedLocationIds}
-                          class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                          disabled={submitting || referenceLoading}
-                          on:change={(event) => handleMultiSelectChange(event, "selectedLocationIds")}
-                        >
-                          <option value={ALL_OPTION_VALUE}>Todas las ubicaciones</option>
-                          {#each locationOptions as option}
-                            <option value={option.id}>
-                              {option.name}{option.code ? ` (${option.code})` : ""}
-                            </option>
-                          {/each}
-                        </select>
-                      {/if}
+                  {#if referenceLoading}
+                    <div class="rounded border border-dashed border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-700">
+                      Cargando…
                     </div>
-                    <div class="space-y-1">
-                      <span class="text-xs font-semibold text-sky-700">Categorías</span>
-                      {#if referenceLoading}
-                        <div class="rounded border border-dashed border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-700">
-                          Cargando…
-                        </div>
-                      {:else}
-                        <select
-                          multiple
-                          size={Math.min(5, Math.max(assetCategoryOptions.length + 1, 4))}
-                          bind:value={draft.selectedAssetCategoryIds}
-                          class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                          disabled={submitting || referenceLoading}
-                          on:change={(event) => handleMultiSelectChange(event, "selectedAssetCategoryIds")}
-                        >
-                          <option value={ALL_OPTION_VALUE}>Todas las categorías</option>
-                          {#each assetCategoryOptions as option}
-                            <option value={option.id}>
-                              {option.name}{option.code ? ` (${option.code})` : ""}
-                            </option>
-                          {/each}
-                        </select>
-                      {/if}
-                    </div>
-                    <div class="space-y-1">
-                      <span class="text-xs font-semibold text-sky-700">Responsables</span>
-                      {#if referenceLoading}
-                        <div class="rounded border border-dashed border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-700">
-                          Cargando…
-                        </div>
-                      {:else}
-                        <select
-                          multiple
-                          size={Math.min(6, Math.max(responsibleOptions.length + 1, 5))}
-                          bind:value={draft.selectedResponsibleIds}
-                          class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                          disabled={submitting || referenceLoading}
-                          on:change={(event) => handleMultiSelectChange(event, "selectedResponsibleIds")}
-                        >
-                          <option value={ALL_OPTION_VALUE}>Todos los responsables</option>
-                          {#each responsibleOptions as option}
-                            <option value={option.id}>{option.name}</option>
-                          {/each}
-                        </select>
-                      {/if}
-                    </div>
-                  </div>
+                  {:else}
+                    <select
+                      multiple
+                      size={Math.min(5, Math.max(locationOptions.length + 1, 4))}
+                      bind:value={draft.selectedLocationIds}
+                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      disabled={submitting || referenceLoading}
+                      on:change={(event) => handleMultiSelectChange(event, "selectedLocationIds")}
+                    >
+                      <option value={ALL_OPTION_VALUE}>Todas las ubicaciones</option>
+                      {#each locationOptions as option}
+                        <option value={option.id}>
+                          {option.name}{option.code ? ` (${option.code})` : ""}
+                        </option>
+                      {/each}
+                    </select>
+                  {/if}
                 </td>
-                <td class={`${DATA_CELL_CLASS} text-right`}>
-                  <div class="flex justify-end gap-2">
-                    <button
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-400 disabled:opacity-60"
-                      on:click={saveCampaign}
-                      disabled={submitting}
-                      type="button"
-                      aria-label="Guardar campaña"
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  {#if referenceLoading}
+                    <div class="rounded border border-dashed border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-700">
+                      Cargando…
+                    </div>
+                  {:else}
+                    <select
+                      multiple
+                      size={Math.min(5, Math.max(assetCategoryOptions.length + 1, 4))}
+                      bind:value={draft.selectedAssetCategoryIds}
+                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      disabled={submitting || referenceLoading}
+                      on:change={(event) => handleMultiSelectChange(event, "selectedAssetCategoryIds")}
                     >
-                      {@html icons.check}
-                    </button>
-                    <button
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-700 shadow-sm transition hover:bg-slate-300"
-                      on:click={cancelEdit}
-                      type="button"
-                      aria-label="Cancelar"
+                      <option value={ALL_OPTION_VALUE}>Todas las categorías</option>
+                      {#each assetCategoryOptions as option}
+                        <option value={option.id}>
+                          {option.name}{option.code ? ` (${option.code})` : ""}
+                        </option>
+                      {/each}
+                    </select>
+                  {/if}
+                </td>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  {#if referenceLoading}
+                    <div class="rounded border border-dashed border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-700">
+                      Cargando…
+                    </div>
+                  {:else}
+                    <select
+                      multiple
+                      size={Math.min(6, Math.max(responsibleOptions.length + 1, 5))}
+                      bind:value={draft.selectedResponsibleIds}
+                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      disabled={submitting || referenceLoading}
+                      on:change={(event) => handleMultiSelectChange(event, "selectedResponsibleIds")}
                     >
-                      {@html icons.x}
-                    </button>
+                      <option value={ALL_OPTION_VALUE}>Todos los responsables</option>
+                      {#each responsibleOptions as option}
+                        <option value={option.id}>{option.name}</option>
+                      {/each}
+                    </select>
+                  {/if}
+                </td>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  <textarea
+                    rows="4"
+                    class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                    bind:value={draft.metadataText}
+                    placeholder="Datos adicionales en JSON"
+                    disabled={submitting}
+                  ></textarea>
+                </td>
+                <td class={actionCellClass(true)}>
+                  <div class="flex flex-nowrap items-center justify-end gap-2">
+                    <div class="relative inline-flex group">
+                      <button
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-400 disabled:opacity-60"
+                        on:click={saveCampaign}
+                        disabled={submitting}
+                        type="button"
+                        aria-label="Guardar campaña"
+                        title="Guardar campaña"
+                      >
+                        {@html icons.check}
+                      </button>
+                      <span class={TOOLTIP_CLASS}>Guardar campaña</span>
+                    </div>
+                    <div class="relative inline-flex group">
+                      <button
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-700 shadow-sm transition hover:bg-slate-300"
+                        on:click={cancelEdit}
+                        type="button"
+                        aria-label="Cancelar"
+                        title="Cancelar"
+                      >
+                        {@html icons.x}
+                      </button>
+                      <span class={TOOLTIP_CLASS}>Cancelar</span>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -728,7 +735,7 @@
 
             {#if !creating && !campaigns.length}
               <tr>
-                <td colspan="7" class="px-3 py-6 text-center text-sm text-sky-900">
+                <td colspan="10" class="px-3 py-6 text-center text-sm text-sky-900">
                   No hay campañas registradas.
                 </td>
               </tr>
@@ -736,7 +743,7 @@
 
             {#each campaigns as campaign (campaign.id)}
               {#if editingId === campaign.id}
-                <tr class="bg-white border-b border-sky-100">
+                <tr class="border-b border-sky-100 bg-white">
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
                     <input
                       class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
@@ -745,23 +752,12 @@
                     />
                   </td>
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                    <div class="space-y-2">
-                      <textarea
-                        rows="3"
-                        class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                        bind:value={draft.description}
-                        disabled={submitting}
-                      ></textarea>
-                      <div class="space-y-1">
-                        <span class="text-xs font-semibold text-sky-700">Metadata (JSON opcional)</span>
-                        <textarea
-                          rows="4"
-                          class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                          bind:value={draft.metadataText}
-                          disabled={submitting}
-                        ></textarea>
-                      </div>
-                    </div>
+                    <textarea
+                      rows="3"
+                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      bind:value={draft.description}
+                      disabled={submitting}
+                    ></textarea>
                   </td>
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
                     <select
@@ -793,90 +789,109 @@
                     />
                   </td>
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                    <div class="space-y-3">
-                      <div class="space-y-1">
-                        <span class="text-xs font-semibold text-sky-700">Ubicaciones</span>
-                        <select
-                          multiple
-                          size={Math.min(5, Math.max(locationOptions.length + 1, 4))}
-                          bind:value={draft.selectedLocationIds}
-                          class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                          disabled={submitting || referenceLoading}
-                          on:change={(event) => handleMultiSelectChange(event, "selectedLocationIds")}
-                        >
-                          <option value={ALL_OPTION_VALUE}>Todas las ubicaciones</option>
-                          {#each locationOptions as option}
-                            <option value={option.id}>
-                              {option.name}{option.code ? ` (${option.code})` : ""}
-                            </option>
-                          {/each}
-                        </select>
-                      </div>
-                      <div class="space-y-1">
-                        <span class="text-xs font-semibold text-sky-700">Categorías</span>
-                        <select
-                          multiple
-                          size={Math.min(5, Math.max(assetCategoryOptions.length + 1, 4))}
-                          bind:value={draft.selectedAssetCategoryIds}
-                          class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                          disabled={submitting || referenceLoading}
-                          on:change={(event) => handleMultiSelectChange(event, "selectedAssetCategoryIds")}
-                        >
-                          <option value={ALL_OPTION_VALUE}>Todas las categorías</option>
-                          {#each assetCategoryOptions as option}
-                            <option value={option.id}>
-                              {option.name}{option.code ? ` (${option.code})` : ""}
-                            </option>
-                          {/each}
-                        </select>
-                      </div>
-                      <div class="space-y-1">
-                        <span class="text-xs font-semibold text-sky-700">Responsables</span>
-                        <select
-                          multiple
-                          size={Math.min(6, Math.max(responsibleOptions.length + 1, 5))}
-                          bind:value={draft.selectedResponsibleIds}
-                          class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                          disabled={submitting || referenceLoading}
-                          on:change={(event) => handleMultiSelectChange(event, "selectedResponsibleIds")}
-                        >
-                          <option value={ALL_OPTION_VALUE}>Todos los responsables</option>
-                          {#each responsibleOptions as option}
-                            <option value={option.id}>{option.name}</option>
-                          {/each}
-                        </select>
-                      </div>
-                    </div>
+                    <select
+                      multiple
+                      size={Math.min(5, Math.max(locationOptions.length + 1, 4))}
+                      bind:value={draft.selectedLocationIds}
+                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      disabled={submitting || referenceLoading}
+                      on:change={(event) => handleMultiSelectChange(event, "selectedLocationIds")}
+                    >
+                      <option value={ALL_OPTION_VALUE}>Todas las ubicaciones</option>
+                      {#each locationOptions as option}
+                        <option value={option.id}>
+                          {option.name}{option.code ? ` (${option.code})` : ""}
+                        </option>
+                      {/each}
+                    </select>
                   </td>
-                  <td class={`${DATA_CELL_CLASS} text-right`}>
-                    <div class="flex justify-end gap-2">
-                      <button
-                        class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-400 disabled:opacity-60"
-                        on:click={saveCampaign}
-                        disabled={submitting}
-                        type="button"
-                        aria-label="Guardar campaña"
-                      >
-                        {@html icons.check}
-                      </button>
-                      <button
-                        class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-700 shadow-sm transition hover:bg-slate-300"
-                        on:click={cancelEdit}
-                        type="button"
-                        aria-label="Cancelar"
-                      >
-                        {@html icons.x}
-                      </button>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <select
+                      multiple
+                      size={Math.min(5, Math.max(assetCategoryOptions.length + 1, 4))}
+                      bind:value={draft.selectedAssetCategoryIds}
+                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      disabled={submitting || referenceLoading}
+                      on:change={(event) => handleMultiSelectChange(event, "selectedAssetCategoryIds")}
+                    >
+                      <option value={ALL_OPTION_VALUE}>Todas las categorías</option>
+                      {#each assetCategoryOptions as option}
+                        <option value={option.id}>
+                          {option.name}{option.code ? ` (${option.code})` : ""}
+                        </option>
+                      {/each}
+                    </select>
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <select
+                      multiple
+                      size={Math.min(6, Math.max(responsibleOptions.length + 1, 5))}
+                      bind:value={draft.selectedResponsibleIds}
+                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      disabled={submitting || referenceLoading}
+                      on:change={(event) => handleMultiSelectChange(event, "selectedResponsibleIds")}
+                    >
+                      <option value={ALL_OPTION_VALUE}>Todos los responsables</option>
+                      {#each responsibleOptions as option}
+                        <option value={option.id}>{option.name}</option>
+                      {/each}
+                    </select>
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <textarea
+                      rows="4"
+                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      bind:value={draft.metadataText}
+                      disabled={submitting}
+                    ></textarea>
+                  </td>
+                  <td class={actionCellClass(true)}>
+                    <div class="flex flex-nowrap items-center justify-end gap-2">
+                      <div class="relative inline-flex group">
+                        <button
+                          class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-400 disabled:opacity-60"
+                          on:click={saveCampaign}
+                          disabled={submitting}
+                          type="button"
+                          aria-label="Guardar campaña"
+                          title="Guardar campaña"
+                        >
+                          {@html icons.check}
+                        </button>
+                        <span class={TOOLTIP_CLASS}>Guardar campaña</span>
+                      </div>
+                      <div class="relative inline-flex group">
+                        <button
+                          class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-700 shadow-sm transition hover:bg-slate-300"
+                          on:click={cancelEdit}
+                          type="button"
+                          aria-label="Cancelar"
+                          title="Cancelar"
+                        >
+                          {@html icons.x}
+                        </button>
+                        <span class={TOOLTIP_CLASS}>Cancelar</span>
+                      </div>
                     </div>
                   </td>
                 </tr>
               {:else}
                 <tr class="border-b border-sky-100 bg-slate-50">
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                    <span class="font-semibold text-sky-900">{campaign.name}</span>
+                    <span
+                      class="block max-w-[220px] truncate whitespace-nowrap text-slate-700"
+                      title={campaign.name}
+                    >
+                      {campaign.name}
+                    </span>
                   </td>
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                    <span class="text-sm text-slate-700">{campaign.description || "Sin descripción"}</span>
+                    <span
+                      class="block max-w-[280px] truncate whitespace-nowrap text-slate-700"
+                      title={displayValue(campaign.description)}
+                    >
+                      {displayValue(campaign.description)}
+                    </span>
                   </td>
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
                     <span class={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(campaign.status)}`}>
@@ -884,49 +899,72 @@
                     </span>
                   </td>
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                    {formatDate(campaign.startsAt) || "—"}
+                    <span class="whitespace-nowrap">{formatDate(campaign.startsAt) || "—"}</span>
                   </td>
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                    {formatDate(campaign.endsAt) || "—"}
+                    <span class="whitespace-nowrap">{formatDate(campaign.endsAt) || "—"}</span>
                   </td>
                   <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                    {#if scopeEntries(campaign.scopeFilters).length}
-                      <ul class="space-y-1 text-sm text-slate-800">
-                        {#each scopeEntries(campaign.scopeFilters) as item (item.key)}
-                          <li>
-                            <span class="font-semibold text-slate-700">{item.key}:</span>
-                            <span class="ml-1">{item.value}</span>
-                          </li>
-                        {/each}
-                      </ul>
-                    {:else}
-                      <span class="text-sm text-slate-600">Todos los activos</span>
-                    {/if}
+                    <span
+                      class="block max-w-[240px] truncate whitespace-nowrap text-slate-700"
+                      title={displayScopeList(campaign.scopeFilters?.locations, locationMap)}
+                    >
+                      {displayScopeList(campaign.scopeFilters?.locations, locationMap)}
+                    </span>
                   </td>
-                  <td class={`${DATA_CELL_CLASS} text-right`}>
-                    <div class="flex flex-wrap justify-end gap-2">
-                      <button
-                        class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50"
-                        type="button"
-                        on:click={() => startEdit(campaign)}
-                        disabled={submitting || creating}
-                        aria-label={`Editar campaña ${campaign.name}`}
-                      >
-                        {@html icons.edit}
-                      </button>
-                      {#each statusActions(campaign) as action (action.value)}
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <span
+                      class="block max-w-[240px] truncate whitespace-nowrap text-slate-700"
+                      title={displayScopeList(campaign.scopeFilters?.assetCategories, assetCategoryMap)}
+                    >
+                      {displayScopeList(campaign.scopeFilters?.assetCategories, assetCategoryMap)}
+                    </span>
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <span
+                      class="block max-w-[240px] truncate whitespace-nowrap text-slate-700"
+                      title={displayScopeList(campaign.scopeFilters?.responsibles, responsibleMap)}
+                    >
+                      {displayScopeList(campaign.scopeFilters?.responsibles, responsibleMap)}
+                    </span>
+                  </td>
+                  <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                    <span
+                      class="block max-w-[280px] truncate whitespace-nowrap text-slate-700"
+                      title={summarizeMetadata(campaign.metadata)}
+                    >
+                      {summarizeMetadata(campaign.metadata)}
+                    </span>
+                  </td>
+                  <td class={actionCellClass(false)}>
+                    <div class="flex flex-nowrap items-center justify-end gap-2">
+                      <div class="relative inline-flex group">
                         <button
-                          class="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-60"
+                          class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50"
                           type="button"
-                          on:click={() => updateCampaignStatus(campaign, action.value)}
-                          disabled={submitting || campaign.status === action.value}
-                          aria-label={`Cambiar estado a ${action.label}`}
+                          on:click={() => startEdit(campaign)}
+                          disabled={submitting || creating}
+                          aria-label={`Editar campaña ${campaign.name}`}
+                          title={`Editar campaña ${campaign.name}`}
                         >
-                          <span class="inline-flex items-center gap-1">
-                            <span aria-hidden="true">{@html icons.refresh}</span>
-                            <span>{action.label}</span>
-                          </span>
+                          {@html icons.edit}
                         </button>
+                        <span class={TOOLTIP_CLASS}>{`Editar ${campaign.name}`}</span>
+                      </div>
+                      {#each statusActions(campaign) as action (action.value)}
+                        <div class="relative inline-flex group">
+                          <button
+                            class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-60"
+                            type="button"
+                            on:click={() => updateCampaignStatus(campaign, action.value)}
+                            disabled={submitting || campaign.status === action.value}
+                            aria-label={`Cambiar estado a ${action.label}`}
+                            title={action.label}
+                          >
+                            <span aria-hidden="true">{@html icons[action.icon] ?? icons.refresh}</span>
+                          </button>
+                          <span class={TOOLTIP_CLASS}>{action.label}</span>
+                        </div>
                       {/each}
                     </div>
                   </td>

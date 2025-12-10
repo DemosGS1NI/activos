@@ -13,7 +13,7 @@ import {
 } from "./_helpers.js";
 
 export async function GET(event) {
-  await requirePermission(event, "inventory.check");
+  await requirePermission(event, ["inventory.check", "inventory_campaigns"]);
   const params = event.url.searchParams;
   const statusFilters = params.getAll("status").map((value) => value.trim().toLowerCase()).filter(Boolean);
   const uniqueStatuses = [...new Set(statusFilters)].filter((value) => CAMPAIGN_STATUSES.includes(value));

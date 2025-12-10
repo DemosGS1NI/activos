@@ -221,7 +221,7 @@
       aria-label="Nuevo centro de costo"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo centro</span>
+      <span>Nuevo</span>
     </button>
   </div>
 

@@ -19,6 +19,7 @@
   import ResponsibleManager from "./ResponsibleManager.svelte";
   import ProviderManager from "./ProviderManager.svelte";
   import AssetManager from "./AssetManager.svelte";
+  import AssetImportPanel from "./AssetImportPanel.svelte";
   import InventoryConditionManager from "./InventoryConditionManager.svelte";
   import InventoryTaking from "./InventoryTaking.svelte";
   import InventoryCampaignManager from "./InventoryCampaignManager.svelte";
@@ -36,6 +37,7 @@
   let viewMode = initialView;
   let userReady = false;
   let initialViewApplied = false;
+  let sidebarCollapsed = false;
 
   const unsubscribeMenu = menuStore.subscribe((value) => {
     menu = value;
@@ -138,6 +140,7 @@
     if (mode === "responsibles") return "/responsibles";
     if (mode === "providers") return "/providers";
     if (mode === "assets") return "/assets";
+    if (mode === "assetImport") return "/assets/importer";
     if (mode === "inventoryConditions") return "/inventory_conditions";
     if (mode === "inventoryCampaigns") return "/inventory/campaigns";
     if (mode === "inventoryDashboard") return "/inventory/dashboard";
@@ -181,6 +184,7 @@
         initialView === "responsibles" ||
         initialView === "providers" ||
         initialView === "assets" ||
+        initialView === "assetImport" ||
         initialView === "inventoryConditions" ||
         initialView === "inventoryCampaigns" ||
         initialView === "inventoryDashboard" ||
@@ -208,8 +212,20 @@
     await loadMenuFromServer();
   }
 
+  function handleImportChange(event) {
+    const refreshAssets = event?.detail?.refreshAssets === true;
+    const stayOnPanel = event?.detail?.stayOnPanel === true;
+    if (refreshAssets && !stayOnPanel) {
+      switchView("assets");
+    }
+  }
+
   function handleHome() {
     switchView("overview");
+  }
+
+  function toggleSidebar() {
+    sidebarCollapsed = !sidebarCollapsed;
   }
 
   function handleTaskSelection(event) {
@@ -325,6 +341,12 @@
       } else {
         goto("/assets");
       }
+    } else if (task.route === "/assets/importer") {
+      if (isAdmin) {
+        switchView("assetImport");
+      } else {
+        goto("/assets/importer");
+      }
     } else if (task.route) {
       goto(task.route);
     }
@@ -335,12 +357,14 @@
   <Sidebar
     {menu}
     loading={menuLoading}
+    collapsed={sidebarCollapsed}
     on:home={handleHome}
     on:task={handleTaskSelection}
+    on:toggleSidebar={toggleSidebar}
   />
-  <div class="flex-1 flex flex-col">
+  <div class="flex-1 min-w-0 flex flex-col">
     <Header {user} onLogout={doLogout} onProfile={openProfile} />
-    <main class="flex-1 overflow-auto p-6 space-y-4">
+    <main class="flex-1 min-w-0 overflow-auto p-6 space-y-4">
       {#if isAdmin && viewMode === "menuGroups"}
         <MenuGroupManager on:change={handleAdminChange} />
       {:else if isAdmin && viewMode === "roles"}
@@ -371,6 +395,8 @@
         <ProviderManager on:change={handleAdminChange} />
       {:else if isAdmin && viewMode === "assets"}
         <AssetManager on:change={handleAdminChange} />
+      {:else if isAdmin && viewMode === "assetImport"}
+        <AssetImportPanel on:change={handleImportChange} />
       {:else if isAdmin && viewMode === "inventoryConditions"}
         <InventoryConditionManager on:change={handleAdminChange} />
       {:else if isAdmin && viewMode === "inventoryCampaigns"}

@@ -192,7 +192,7 @@
       aria-label="Nuevo estado de activo"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo estado</span>
+      <span>Nuevo</span>
     </button>
   </div>
 

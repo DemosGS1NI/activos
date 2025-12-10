@@ -148,22 +148,12 @@
     };
   }
 
-  function formatLocation(item) {
-    const parts = [item.city, item.region, item.country]
-      .map((part) => (part ?? "").toString().trim())
-      .filter((part) => part.length > 0);
-    return parts.length ? parts.join(", ") : "—";
-  }
-
-  function formatAddress(item) {
-    const parts = [item.address_line, item.postal_code]
-      .map((part) => (part ?? "").toString().trim())
-      .filter((part) => part.length > 0);
-    return parts.length ? parts.join(" · ") : "—";
-  }
-
   function displayValue(value) {
     return value && value.trim ? value.trim() || "—" : value || "—";
+  }
+
+  function actionCellClass(isEditing) {
+    return `${DATA_CELL_CLASS} sticky right-0 text-right border-l border-sky-200 ${isEditing ? "bg-white" : "bg-slate-50"} shadow-[inset_1px_0_0_rgba(15,23,42,0.1)]`; // keep actions visible during horizontal scroll
   }
 
   async function saveProvider() {
@@ -235,7 +225,7 @@
       aria-label="Nuevo proveedor"
     >
       <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo proveedor</span>
+      <span>Nuevo</span>
     </button>
   </div>
 
@@ -253,7 +243,7 @@
 
   <div class="rounded-lg border border-sky-200 bg-slate-50 shadow-sm">
     <div class="overflow-x-auto">
-      <table class="min-w-full border-collapse">
+      <table class="w-full min-w-[1200px] border-collapse">
         <thead class="bg-sky-200/80 text-sky-900">
           <tr
             class="border-b border-sky-200 text-left text-xs font-semibold tracking-wide"
@@ -307,21 +297,57 @@
               </button>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
+              <span class={HEADER_LABEL_CLASS}>Dirección</span>
+            </th>
+            <th class="border-r border-sky-200 px-3 py-2">
               <button
                 type="button"
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("city")}
               >
-                Ubicación
+                Ciudad
                 {#if sortKey === "city"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
               </button>
             </th>
             <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>Dirección</span>
+              <button
+                type="button"
+                class={HEADER_BUTTON_CLASS}
+                on:click={() => toggleSort("region")}
+              >
+                Región/Estado
+                {#if sortKey === "region"}
+                  <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
+                {/if}
+              </button>
             </th>
-            <th class="px-3 py-2 text-right">
+            <th class="border-r border-sky-200 px-3 py-2">
+              <button
+                type="button"
+                class={HEADER_BUTTON_CLASS}
+                on:click={() => toggleSort("country")}
+              >
+                País
+                {#if sortKey === "country"}
+                  <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
+                {/if}
+              </button>
+            </th>
+            <th class="border-r border-sky-200 px-3 py-2">
+              <button
+                type="button"
+                class={HEADER_BUTTON_CLASS}
+                on:click={() => toggleSort("postal_code")}
+              >
+                Código postal
+                {#if sortKey === "postal_code"}
+                  <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
+                {/if}
+              </button>
+            </th>
+            <th class="sticky right-0 z-10 bg-sky-200/90 px-3 py-2 text-right shadow-[inset_1px_0_0_rgba(15,23,42,0.18)] backdrop-blur">
               <span class={HEADER_LABEL_CLASS}>Acciones</span>
             </th>
           </tr>
@@ -330,7 +356,7 @@
           {#if loading}
             <tr>
               <td
-                colspan="7"
+                colspan="10"
                 class="px-3 py-6 text-center text-sm text-sky-900"
               >
                 Cargando proveedores…
@@ -371,44 +397,46 @@
                 />
               </td>
               <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                <div class="space-y-2">
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.city}
-                    placeholder="Ciudad"
-                    disabled={submitting}
-                  />
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.region}
-                    placeholder="Región/Estado"
-                    disabled={submitting}
-                  />
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.country}
-                    placeholder="País"
-                    disabled={submitting}
-                  />
-                </div>
+                <input
+                  class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                  bind:value={draft.address_line}
+                  placeholder="Dirección"
+                  disabled={submitting}
+                />
               </td>
               <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                <div class="space-y-2">
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.address_line}
-                    placeholder="Dirección"
-                    disabled={submitting}
-                  />
-                  <input
-                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                    bind:value={draft.postal_code}
-                    placeholder="Código postal"
-                    disabled={submitting}
-                  />
-                </div>
+                <input
+                  class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                  bind:value={draft.city}
+                  placeholder="Ciudad"
+                  disabled={submitting}
+                />
               </td>
-              <td class={`${DATA_CELL_CLASS} text-right`}>
+              <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                <input
+                  class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                  bind:value={draft.region}
+                  placeholder="Región/Estado"
+                  disabled={submitting}
+                />
+              </td>
+              <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                <input
+                  class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                  bind:value={draft.country}
+                  placeholder="País"
+                  disabled={submitting}
+                />
+              </td>
+              <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                <input
+                  class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                  bind:value={draft.postal_code}
+                  placeholder="Código postal"
+                  disabled={submitting}
+                />
+              </td>
+              <td class={actionCellClass(true)}>
                 <div class="flex justify-end gap-2">
                   <button
                     class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-400 disabled:opacity-60"
@@ -470,44 +498,46 @@
                   />
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <div class="space-y-2">
-                    <input
-                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                      bind:value={draft.city}
-                      placeholder="Ciudad"
-                      disabled={submitting}
-                    />
-                    <input
-                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                      bind:value={draft.region}
-                      placeholder="Región/Estado"
-                      disabled={submitting}
-                    />
-                    <input
-                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                      bind:value={draft.country}
-                      placeholder="País"
-                      disabled={submitting}
-                    />
-                  </div>
+                  <input
+                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                    bind:value={draft.address_line}
+                    placeholder="Dirección"
+                    disabled={submitting}
+                  />
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <div class="space-y-2">
-                    <input
-                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                      bind:value={draft.address_line}
-                      placeholder="Dirección"
-                      disabled={submitting}
-                    />
-                    <input
-                      class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
-                      bind:value={draft.postal_code}
-                      placeholder="Código postal"
-                      disabled={submitting}
-                    />
-                  </div>
+                  <input
+                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                    bind:value={draft.city}
+                    placeholder="Ciudad"
+                    disabled={submitting}
+                  />
                 </td>
-                <td class={`${DATA_CELL_CLASS} text-right`}>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  <input
+                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                    bind:value={draft.region}
+                    placeholder="Región/Estado"
+                    disabled={submitting}
+                  />
+                </td>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  <input
+                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                    bind:value={draft.country}
+                    placeholder="País"
+                    disabled={submitting}
+                  />
+                </td>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  <input
+                    class="w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                    bind:value={draft.postal_code}
+                    placeholder="Código postal"
+                    disabled={submitting}
+                  />
+                </td>
+                <td class={actionCellClass(true)}>
                   <div class="flex justify-end gap-2">
                     <button
                       class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-400 disabled:opacity-60"
@@ -542,12 +572,21 @@
                   {displayValue(item.tax_id)}
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  {formatLocation(item)}
+                  {displayValue(item.address_line)}
                 </td>
                 <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  {formatAddress(item)}
+                  {displayValue(item.city)}
                 </td>
-                <td class={`${DATA_CELL_CLASS} text-right`}>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  {displayValue(item.region)}
+                </td>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  {displayValue(item.country)}
+                </td>
+                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
+                  {displayValue(item.postal_code)}
+                </td>
+                <td class={actionCellClass(false)}>
                   <div class="flex justify-end gap-2">
                     <button
                       class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50"
@@ -575,7 +614,7 @@
           {#if !loading && !providers.length && !creating}
             <tr>
               <td
-                colspan="7"
+                colspan="10"
                 class="px-3 py-6 text-center text-sm text-sky-900"
               >
                 No hay proveedores registrados.

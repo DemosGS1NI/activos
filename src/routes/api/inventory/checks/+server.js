@@ -18,7 +18,7 @@ function normalizeScannedCode(value) {
 }
 
 export async function POST(event) {
-  const user = await requirePermission(event, "inventory.check");
+  const user = await requirePermission(event, ["inventory.check", "toma_inventario"]);
   const userId = user?.id;
   if (!userId) return badRequest("Usuario inválido");
 

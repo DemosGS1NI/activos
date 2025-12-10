@@ -116,7 +116,7 @@ async function findAssetIdByCode(code) {
 }
 
 export async function GET(event) {
-  await requirePermission(event, "inventory.check");
+  await requirePermission(event, ["inventory.check", "toma_inventario"]);
 
   const params = event.url.searchParams;
   const rawCode = normalizeString(params.get("code"));

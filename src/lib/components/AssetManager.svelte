@@ -70,7 +70,168 @@
   const HEADER_BUTTON_CLASS =
     "flex items-center gap-2 font-semibold tracking-wide text-sky-900 transition hover:text-indigo-700";
   const HEADER_LABEL_CLASS = "block font-semibold tracking-wide text-sky-900";
-  const DATA_CELL_CLASS = "px-3 py-2 text-sm text-sky-900";
+  const DATA_CELL_CLASS = "px-3 py-2 text-sm text-sky-900 whitespace-nowrap";
+
+  // Metadata drives which columns are available and their default visibility.
+  const COLUMN_DEFINITIONS = [
+    {
+      id: "asset_tag",
+      label: "Código",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[8rem]",
+    },
+    {
+      id: "alternative_number",
+      label: "Número alterno",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[8rem]",
+    },
+    {
+      id: "name",
+      label: "Nombre",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[12rem]",
+    },
+    {
+      id: "description",
+      label: "Descripción",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[18rem]",
+    },
+    {
+      id: "asset_category",
+      label: "Categoría",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[10rem]",
+    },
+    {
+      id: "asset_status",
+      label: "Estado",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[9rem]",
+    },
+    {
+      id: "location",
+      label: "Ubicación",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[10rem]",
+    },
+    {
+      id: "responsible",
+      label: "Responsable",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[10rem]",
+    },
+    {
+      id: "actual_book_value",
+      label: "Valor",
+      defaultVisible: true,
+      align: "right",
+      widthClass: "min-w-[8rem]",
+    },
+    {
+      id: "initial_cost",
+      label: "Costo inicial",
+      defaultVisible: true,
+      align: "right",
+      widthClass: "min-w-[8rem]",
+    },
+    {
+      id: "actual_cost",
+      label: "Costo actual",
+      defaultVisible: true,
+      align: "right",
+      widthClass: "min-w-[8rem]",
+    },
+    {
+      id: "residual_value",
+      label: "Valor residual",
+      defaultVisible: true,
+      align: "right",
+      widthClass: "min-w-[8rem]",
+    },
+    {
+      id: "depreciation_method",
+      label: "Método depreciación",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[10rem]",
+    },
+    {
+      id: "lifespan_months",
+      label: "Vida útil (meses)",
+      defaultVisible: true,
+      align: "right",
+      widthClass: "min-w-[7rem]",
+    },
+    {
+      id: "depreciation_period",
+      label: "Periodo de depreciación",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[9rem]",
+    },
+    {
+      id: "provider",
+      label: "Proveedor",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[10rem]",
+    },
+    {
+      id: "department",
+      label: "Departamento",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[10rem]",
+    },
+    {
+      id: "cost_center",
+      label: "Centro de costo",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[10rem]",
+    },
+    {
+      id: "purchase_order_number",
+      label: "Orden de compra",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[9rem]",
+    },
+    {
+      id: "transaction_number",
+      label: "Número de transacción",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[9rem]",
+    },
+    {
+      id: "parent_asset",
+      label: "Activo padre",
+      defaultVisible: true,
+      align: "left",
+      widthClass: "min-w-[12rem]",
+    },
+  ];
+
+  let visibleColumnIds = COLUMN_DEFINITIONS.filter((column) => column.defaultVisible).map((column) => column.id);
+  let columnMenuOpen = false;
+  let columnMenuButtonElement;
+  let columnMenuElement;
+
+  // Supported pagination sizes keep the data grid responsive without extra requests.
+  const PAGE_SIZES = [10, 20, 50, 100];
+  let pageSize = 10;
+  let currentPage = 1;
 
   const currencyFormatter = new Intl.NumberFormat("es-ES", {
     style: "currency",
@@ -97,6 +258,7 @@
     try {
       const data = await listAssets();
       assets = Array.isArray(data) ? data : [];
+      currentPage = 1;
     } catch (err) {
       showMessage(err.message || "No fue posible cargar los activos", "error");
     } finally {
@@ -182,60 +344,8 @@
     try {
       return JSON.parse(trimmed);
     } catch (err) {
-      throw new Error("Los atributos adicionales deben ser JSON válido");
+      throw new Error("Atributos adicionales deben ser un JSON válido");
     }
-  }
-
-  function buildPayload() {
-    const tag = String(draft.asset_tag || "")
-      .trim()
-      .toUpperCase();
-    if (!tag) throw new Error("El número de activo es requerido");
-
-    const name = String(draft.name || "").trim();
-    if (!name) throw new Error("El nombre del activo es requerido");
-
-    if (!draft.asset_category_id) {
-      throw new Error("La categoría del activo es requerida");
-    }
-
-    if (!draft.asset_status_id) {
-      throw new Error("El estado del activo es requerido");
-    }
-
-    return {
-      asset_tag: tag,
-      name,
-      description: emptyToNull(draft.description),
-      alternative_number: emptyToNull(draft.alternative_number),
-      parent_asset_id: idOrNull(draft.parent_asset_id),
-      asset_category_id: String(draft.asset_category_id),
-      asset_status_id: String(draft.asset_status_id),
-      depreciation_method_id: idOrNull(draft.depreciation_method_id),
-      lifespan_months: integerOrNull(draft.lifespan_months, "La vida útil"),
-      depreciation_period: emptyToNull(draft.depreciation_period),
-      initial_cost: decimalOrNull(draft.initial_cost, "El costo inicial"),
-      actual_cost: decimalOrNull(draft.actual_cost, "El costo actual"),
-      residual_value: decimalOrNull(draft.residual_value, "El valor residual"),
-      actual_book_value: decimalOrNull(
-        draft.actual_book_value,
-        "El valor en libros"
-      ),
-      cumulative_depreciation_value: decimalOrNull(
-        draft.cumulative_depreciation_value,
-        "La depreciación acumulada"
-      ),
-      purchase_order_number: emptyToNull(draft.purchase_order_number),
-      transaction_number: emptyToNull(draft.transaction_number),
-      provider_id: idOrNull(draft.provider_id),
-      department_id: idOrNull(draft.department_id),
-      cost_center_id: idOrNull(draft.cost_center_id),
-      location_id: idOrNull(draft.location_id),
-      responsible_id: idOrNull(draft.responsible_id),
-      additional_attributes: parseAdditionalAttributes(
-        draft.additional_attributes
-      ),
-    };
   }
 
   function resetDraft() {
@@ -364,26 +474,221 @@
     const tagB = (b.asset_tag || "").toString();
     return tagA.localeCompare(tagB, "es", { sensitivity: "base" });
   });
+
+  $: visibleColumns = COLUMN_DEFINITIONS.filter((column) =>
+    visibleColumnIds.includes(column.id)
+  );
+  $: visibleColumnCount = visibleColumns.length;
+  $: allColumnsSelected = visibleColumnIds.length === COLUMN_DEFINITIONS.length;
+
+  $: if (!PAGE_SIZES.includes(pageSize)) {
+    pageSize = PAGE_SIZES[0];
+  }
+
+  $: totalPages = Math.max(
+    1,
+    Math.ceil((sortedAssets?.length || 0) / pageSize) || 1
+  );
+
+  $: {
+    const normalizedPage = Math.min(Math.max(1, currentPage), totalPages);
+    if (normalizedPage !== currentPage) {
+      currentPage = normalizedPage;
+    }
+  }
+
+  $: pageStart = (currentPage - 1) * pageSize;
+  $: pageEnd = pageStart + pageSize;
+  $: paginatedAssets = sortedAssets.slice(pageStart, pageEnd);
+
+  function toggleColumn(columnId) {
+    if (visibleColumnIds.includes(columnId)) {
+      if (visibleColumnIds.length === 1) {
+        return;
+      }
+      visibleColumnIds = visibleColumnIds.filter((id) => id !== columnId);
+    } else {
+      visibleColumnIds = [...visibleColumnIds, columnId];
+    }
+  }
+
+  function selectAllColumns() {
+    visibleColumnIds = COLUMN_DEFINITIONS.map((column) => column.id);
+  }
+
+  function resetColumnsToDefault() {
+    visibleColumnIds = COLUMN_DEFINITIONS.filter((column) => column.defaultVisible).map(
+      (column) => column.id
+    );
+  }
+
+  function handlePageSizeChange(event) {
+    const next = Number(event?.currentTarget?.value);
+    pageSize = Number.isFinite(next) && next > 0 ? next : PAGE_SIZES[0];
+    currentPage = 1;
+  }
+
+  function goToPreviousPage() {
+    if (currentPage > 1) {
+      currentPage = currentPage - 1;
+    }
+  }
+
+  function goToNextPage() {
+    if (currentPage < totalPages) {
+      currentPage = currentPage + 1;
+    }
+  }
+
+  function handleWindowClick(event) {
+    if (!columnMenuOpen) return;
+    const target = event?.target;
+    if (
+      columnMenuElement?.contains(target) ||
+      columnMenuButtonElement?.contains(target)
+    ) {
+      return;
+    }
+    columnMenuOpen = false;
+  }
+
+  function handleWindowKeydown(event) {
+    if (event?.key === "Escape" && columnMenuOpen) {
+      columnMenuOpen = false;
+    }
+  }
+  
 </script>
 
+<svelte:window on:click={handleWindowClick} on:keydown={handleWindowKeydown} />
+
 <div class="space-y-6">
-  <div class="flex items-center justify-between gap-4">
+  <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
       <h1 class="text-xl font-semibold text-sky-900">Activos</h1>
-      <p class="text-sm text-sky-700">
-        Gestiona el inventario de activos y su información principal.
-      </p>
+      <p class="text-sm text-sky-700">Gestion de Activos</p>
     </div>
-    <button
-      class="flex items-center gap-2 rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm font-medium text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50"
-      type="button"
-      on:click={openCreate}
-      disabled={submitting || loadingLookups}
-      aria-label="Nuevo activo"
-    >
-      <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
-      <span>Nuevo activo</span>
-    </button>
+    <div class="flex flex-wrap items-center gap-3">
+      <button
+        class="order-last flex items-center gap-2 rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm font-medium text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50"
+        type="button"
+        on:click={openCreate}
+        disabled={submitting || loadingLookups}
+        aria-label="Nuevo activo"
+      >
+        <span class="inline-block" aria-hidden="true">{@html icons.plus}</span>
+        <span>Nuevo</span>
+      </button>
+      <div class="relative order-3">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-md border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-800 shadow-sm transition hover:border-sky-300 hover:bg-sky-100"
+          on:click={() => (columnMenuOpen = !columnMenuOpen)}
+          aria-haspopup="true"
+          aria-expanded={columnMenuOpen}
+          bind:this={columnMenuButtonElement}
+        >
+          <span class="inline-block" aria-hidden="true">{@html icons.table}</span>
+          <span>Columnas</span>
+        </button>
+        {#if columnMenuOpen}
+          <div
+            class="absolute right-0 z-20 mt-2 w-64 rounded-md border border-sky-200 bg-white p-3 text-sky-900 shadow-xl"
+            role="dialog"
+            aria-label="Configurar columnas"
+            bind:this={columnMenuElement}
+          >
+            <div class="flex items-center justify-between gap-2 pb-2">
+              <span class="text-xs font-semibold uppercase tracking-wide text-sky-700">
+                Columnas visibles
+              </span>
+              <button
+                type="button"
+                class="text-xs font-medium text-indigo-600 transition hover:text-indigo-800"
+                on:click={resetColumnsToDefault}
+              >
+                Restablecer
+              </button>
+            </div>
+            <div class="max-h-60 space-y-2 overflow-y-auto pr-1 text-sm text-sky-800">
+              {#each COLUMN_DEFINITIONS as column (column.id)}
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-sky-300 text-indigo-600 focus:ring-indigo-500"
+                    checked={visibleColumnIds.includes(column.id)}
+                    on:change={() => toggleColumn(column.id)}
+                  />
+                  <span>{column.label}</span>
+                </label>
+              {/each}
+            </div>
+            <div class="mt-3 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                class="text-xs font-medium text-indigo-600 transition hover:text-indigo-800"
+                on:click={selectAllColumns}
+                disabled={allColumnsSelected}
+              >
+                Seleccionar todas
+              </button>
+              <button
+                type="button"
+                class="text-xs font-medium text-sky-700 transition hover:text-sky-900"
+                on:click={() => (columnMenuOpen = false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        {/if}
+      </div>
+      <div class="order-2 flex items-center gap-2">
+        <label for="asset-page-size" class="sr-only">Filas por página</label>
+        <select
+          id="asset-page-size"
+          class="rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-sky-900 shadow-sm transition focus:border-indigo-400 focus:outline-none min-w-[5.5rem]"
+          on:change={handlePageSizeChange}
+        >
+          {#each PAGE_SIZES as size}
+            <option value={size} selected={size === pageSize}>{size} filas</option>
+          {/each}
+        </select>
+      </div>
+      <div class="order-first flex flex-wrap items-center justify-end gap-2 text-sm text-sky-900">
+        <span class="flex items-center gap-1">
+          <span>Mostrando</span>
+          <span class="font-semibold text-sky-800">
+            {sortedAssets.length ? pageStart + 1 : 0}
+          </span>
+          <span>-</span>
+          <span class="font-semibold text-sky-800">
+            {Math.min(pageEnd, sortedAssets.length)}
+          </span>
+          <span>de</span>
+          <span class="font-semibold text-sky-800">{sortedAssets.length}</span>
+        </span>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 shadow-sm transition hover:border-sky-300 hover:bg-sky-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+          on:click={goToPreviousPage}
+          disabled={currentPage === 1}
+        >
+          Anterior
+        </button>
+        <span class="text-xs font-semibold uppercase tracking-wide text-sky-700">
+          Página {currentPage} de {totalPages}
+        </span>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 shadow-sm transition hover:border-sky-300 hover:bg-sky-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+          on:click={goToNextPage}
+          disabled={currentPage === totalPages}
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
   </div>
 
   {#if message}
@@ -400,35 +705,31 @@
 
   <div class="rounded-lg border border-sky-200 bg-slate-50 shadow-sm">
     <div class="overflow-x-auto">
-      <table class="min-w-full border-collapse">
+      <table class="min-w-[1400px] border-collapse">
         <thead class="bg-sky-200/80 text-sky-900">
           <tr
             class="border-b border-sky-200 text-left text-xs font-semibold tracking-wide"
           >
-            <th class="border-r border-sky-200 px-3 py-2">
-              <button type="button" class={HEADER_BUTTON_CLASS}>
-                Código
-              </button>
-            </th>
-            <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>Nombre</span>
-            </th>
-            <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>Categoría</span>
-            </th>
-            <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>Estado</span>
-            </th>
-            <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>Ubicación</span>
-            </th>
-            <th class="border-r border-sky-200 px-3 py-2">
-              <span class={HEADER_LABEL_CLASS}>Responsable</span>
-            </th>
-            <th class="border-r border-sky-200 px-3 py-2 text-right">
-              <span class={HEADER_LABEL_CLASS}>Valor</span>
-            </th>
-            <th class="px-3 py-2 text-right">
+            {#each visibleColumns as column (column.id)}
+              <th
+                class={`border-r border-sky-200 px-3 py-2 ${
+                  column.align === "right" ? "text-right" : ""
+                } ${column.widthClass || ""}`}
+              >
+                {#if column.id === "asset_tag"}
+                  <button type="button" class={HEADER_BUTTON_CLASS}>
+                    {column.label}
+                  </button>
+                {:else}
+                  <span class={`${HEADER_LABEL_CLASS} whitespace-nowrap`}>
+                    {column.label}
+                  </span>
+                {/if}
+              </th>
+            {/each}
+            <th
+              class="sticky right-0 z-10 px-3 py-2 text-right bg-sky-200/80 border-l border-sky-200"
+            >
               <span class={HEADER_LABEL_CLASS}>Acciones</span>
             </th>
           </tr>
@@ -437,7 +738,7 @@
           {#if loadingAssets}
             <tr>
               <td
-                colspan="8"
+                colspan={visibleColumnCount + 1}
                 class="px-3 py-6 text-center text-sm text-sky-900"
               >
                 Cargando activos…
@@ -446,73 +747,122 @@
           {:else if !sortedAssets.length}
             <tr>
               <td
-                colspan="8"
+                colspan={visibleColumnCount + 1}
                 class="px-3 py-6 text-center text-sm text-sky-900"
               >
                 No hay activos registrados.
               </td>
             </tr>
           {:else}
-            {#each sortedAssets as item (item.id)}
+            {#each paginatedAssets as item (item.id)}
               <tr class="border-b border-sky-100 bg-white">
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <div class="font-semibold text-sky-900">{item.asset_tag}</div>
-                  {#if item.alternative_number}
-                    <div class="text-xs text-sky-600">
-                      Alt: {item.alternative_number}
-                    </div>
-                  {/if}
-                </td>
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <div class="font-medium">{item.name}</div>
-                  {#if item.description}
-                    <div class="text-xs text-sky-600">
-                      {item.description}
-                    </div>
-                  {/if}
-                </td>
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  {item.asset_category_name ||
-                    labelFor(categories, item.asset_category_id)}
-                </td>
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  <span
-                    class={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
-                      item.asset_status_name === "Retirado" ||
-                      item.asset_status_name === "Dado de baja"
-                        ? "bg-rose-100 text-rose-700"
-                        : "bg-emerald-100 text-emerald-700"
-                    }`}
+                {#each visibleColumns as column (column.id)}
+                  <td
+                    class={`border-r border-sky-100 ${DATA_CELL_CLASS} ${
+                      column.align === "right" ? "text-right" : ""
+                    } ${column.widthClass || ""}`}
                   >
-                    <span
-                      class={`h-2 w-2 rounded-full ${
-                        item.asset_status_name === "Retirado" ||
-                        item.asset_status_name === "Dado de baja"
-                          ? "bg-rose-500"
-                          : "bg-emerald-500"
-                      }`}
-                    ></span>
-                    {item.asset_status_name ||
-                      labelFor(statuses, item.asset_status_id)}
-                  </span>
-                </td>
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  {item.location_name || labelFor(locations, item.location_id)}
-                </td>
-                <td class={`border-r border-sky-100 ${DATA_CELL_CLASS}`}>
-                  {item.responsible_name ||
-                    labelFor(responsibles, item.responsible_id)}
-                </td>
+                    {#if column.id === "asset_tag"}
+                      <span class="text-sky-800">
+                        {item.asset_tag || "—"}
+                      </span>
+                    {:else if column.id === "alternative_number"}
+                      {#if item.alternative_number}
+                        <span class="text-sky-800">{item.alternative_number}</span>
+                      {:else}
+                        <span class="text-slate-500">—</span>
+                      {/if}
+                    {:else if column.id === "name"}
+                      {#if item.name}
+                        <span class="text-sky-800">{item.name}</span>
+                      {:else}
+                        <span class="text-slate-500">—</span>
+                      {/if}
+                    {:else if column.id === "description"}
+                      {#if item.description}
+                        <span class="text-sky-800">{item.description}</span>
+                      {:else}
+                        <span class="text-slate-500">—</span>
+                      {/if}
+                    {:else if column.id === "asset_category"}
+                      {item.asset_category_name ||
+                        labelFor(categories, item.asset_category_id)}
+                    {:else if column.id === "asset_status"}
+                      <span
+                        class={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
+                          item.asset_status_name === "Retirado" ||
+                          item.asset_status_name === "Dado de baja"
+                            ? "bg-rose-100 text-rose-700"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        <span
+                          class={`h-2 w-2 rounded-full ${
+                            item.asset_status_name === "Retirado" ||
+                            item.asset_status_name === "Dado de baja"
+                              ? "bg-rose-500"
+                              : "bg-emerald-500"
+                          }`}
+                        ></span>
+                        {item.asset_status_name ||
+                          labelFor(statuses, item.asset_status_id)}
+                      </span>
+                    {:else if column.id === "location"}
+                      {item.location_name || labelFor(locations, item.location_id)}
+                    {:else if column.id === "responsible"}
+                      {item.responsible_name ||
+                        labelFor(responsibles, item.responsible_id)}
+                    {:else if column.id === "actual_book_value"}
+                      {formatAmount(
+                        item.actual_book_value ??
+                          item.actual_cost ??
+                          item.initial_cost
+                      )}
+                    {:else if column.id === "initial_cost"}
+                      {formatAmount(item.initial_cost)}
+                    {:else if column.id === "actual_cost"}
+                      {formatAmount(item.actual_cost)}
+                    {:else if column.id === "residual_value"}
+                      {formatAmount(item.residual_value)}
+                    {:else if column.id === "provider"}
+                      {item.provider_name || labelFor(providers, item.provider_id)}
+                    {:else if column.id === "department"}
+                      {item.department_name || labelFor(departments, item.department_id)}
+                    {:else if column.id === "cost_center"}
+                      {item.cost_center_name || labelFor(costCenters, item.cost_center_id)}
+                    {:else if column.id === "depreciation_method"}
+                      {item.depreciation_method_name ||
+                        labelFor(depreciationMethods, item.depreciation_method_id)}
+                    {:else if column.id === "lifespan_months"}
+                      {item.lifespan_months ?? "—"}
+                    {:else if column.id === "depreciation_period"}
+                      {item.depreciation_period || "—"}
+                    {:else if column.id === "purchase_order_number"}
+                      {item.purchase_order_number || "—"}
+                    {:else if column.id === "transaction_number"}
+                      {item.transaction_number || "—"}
+                    {:else if column.id === "parent_asset"}
+                      {@const parentLabel = labelFor(assets, item.parent_asset_id)}
+                      {#if item.parent_asset_tag || item.parent_asset_name}
+                        <span class="text-sky-800">
+                          {(item.parent_asset_tag && `${item.parent_asset_tag} — `) || ""}
+                          {item.parent_asset_name || ""}
+                        </span>
+                      {:else if item.parent_asset_id}
+                        <span class="text-sky-800">
+                          {parentLabel !== "—" ? parentLabel : item.parent_asset_id}
+                        </span>
+                      {:else}
+                        <span class="text-slate-500">—</span>
+                      {/if}
+                    {:else}
+                      <span class="text-slate-500">—</span>
+                    {/if}
+                  </td>
+                {/each}
                 <td
-                  class={`border-r border-sky-100 ${DATA_CELL_CLASS} text-right`}
+                  class={`${DATA_CELL_CLASS} text-right sticky right-0 bg-white border-l border-sky-200`}
                 >
-                  {formatAmount(
-                    item.actual_book_value ??
-                      item.actual_cost ??
-                      item.initial_cost
-                  )}
-                </td>
-                <td class={`${DATA_CELL_CLASS} text-right`}>
                   <div class="flex justify-end gap-2">
                     <button
                       class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-200 bg-white text-sky-600 shadow-sm transition hover:border-sky-300 hover:bg-sky-50"

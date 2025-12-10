@@ -12,6 +12,26 @@ export async function query(strings, ...values) {
   return pool.sql(strings, ...values);
 }
 
+// Execute arbitrary sequences within a SQL transaction.
+export async function withTransaction(handler) {
+  const client = await pool.connect();
+  try {
+    await client.sql`BEGIN`;
+    const result = await handler(client);
+    await client.sql`COMMIT`;
+    return result;
+  } catch (error) {
+    try {
+      await client.sql`ROLLBACK`;
+    } catch (rollbackError) {
+      console.error('Transaction rollback failed', rollbackError);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 // Health check: returns server time
 export async function ping() {
   const { rows } = await pool.sql`SELECT now() AS now`;

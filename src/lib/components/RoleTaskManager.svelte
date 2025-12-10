@@ -68,7 +68,7 @@
       roles = await listRoles();
     } catch (err) {
       roles = [];
-      showMessage(err.message || "Unable to load roles", "error");
+      showMessage(err.message || "No fue posible cargar los roles", "error");
     } finally {
       rolesLoading = false;
     }
@@ -80,7 +80,7 @@
       tasks = await listTasks();
     } catch (err) {
       tasks = [];
-      showMessage(err.message || "Unable to load tasks", "error");
+      showMessage(err.message || "No fue posible cargar las tareas", "error");
     } finally {
       tasksLoading = false;
     }
@@ -92,7 +92,7 @@
       mappings = await listRoleTasks();
     } catch (err) {
       mappings = [];
-      showMessage(err.message || "Unable to load mappings", "error");
+      showMessage(err.message || "No fue posible cargar las asignaciones", "error");
     } finally {
       mappingsLoading = false;
     }
@@ -164,7 +164,7 @@
   }
 
   function taskLabel(task) {
-    if (!task) return "Untitled task";
+    if (!task) return "Tarea sin nombre";
     return task.title || task.key;
   }
 
@@ -173,17 +173,17 @@
     clearMessage();
     submitting = true;
     try {
-      if (!form.role_id) throw new Error("Role is required");
-      if (!form.task_id) throw new Error("Task is required");
+      if (!form.role_id) throw new Error("El rol es obligatorio");
+      if (!form.task_id) throw new Error("La tarea es obligatoria");
 
       if (creating) {
         await addRoleTask(form.role_id, form.task_id);
-        showMessage("Mapping created", "success");
+        showMessage("Asignación creada", "success");
       } else if (editingOriginal) {
         const sameRole = form.role_id === editingOriginal.role_id;
         const sameTask = form.task_id === editingOriginal.task_id;
         if (sameRole && sameTask) {
-          showMessage("No changes to save", "success");
+          showMessage("No hay cambios para guardar", "success");
         } else {
           await removeRoleTask(
             editingOriginal.role_id,
@@ -203,7 +203,7 @@
             }
             throw err;
           }
-          showMessage("Mapping updated", "success");
+          showMessage("Asignación actualizada", "success");
         }
       }
 
@@ -211,7 +211,7 @@
       resetForm();
       dispatch("change", { entity: "role-task", refreshMenu: true });
     } catch (err) {
-      showMessage(err.message || "Unable to save mapping", "error");
+      showMessage(err.message || "No fue posible guardar la asignación", "error");
     } finally {
       submitting = false;
     }
@@ -219,14 +219,14 @@
 
   async function removeMapping(mapping) {
     const confirmDelete = confirm(
-      `Remove mapping for role "${mapping.role_name || mapping.role_id}" and task "${mapping.task_title || mapping.task_id}"?`
+      `¿Eliminar la asignación del rol "${mapping.role_name || mapping.role_id}" y la tarea "${mapping.task_title || mapping.task_id}"?`
     );
     if (!confirmDelete) return;
     clearMessage();
     submitting = true;
     try {
       await removeRoleTask(mapping.role_id, mapping.task_id);
-      showMessage("Mapping removed", "success");
+      showMessage("Asignación eliminada", "success");
       await loadMappings();
       dispatch("change", { entity: "role-task", refreshMenu: true });
       if (
@@ -237,7 +237,7 @@
         resetForm();
       }
     } catch (err) {
-      showMessage(err.message || "Unable to remove mapping", "error");
+      showMessage(err.message || "No fue posible eliminar la asignación", "error");
     } finally {
       submitting = false;
     }
@@ -252,9 +252,9 @@
 <div class="space-y-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
-      <h1 class="text-xl font-semibold text-sky-900">Role Tasks</h1>
+      <h1 class="text-xl font-semibold text-sky-900">Tareas por rol</h1>
       <p class="text-sm text-sky-700">
-        Manage which tasks are assigned to each role.
+        Administra qué tareas están asignadas a cada rol.
       </p>
     </div>
     <button
@@ -264,7 +264,7 @@
       disabled={submitting}
     >
       <span aria-hidden="true">{@html icons.plus}</span>
-      <span>New mapping</span>
+      <span>Nueva asignación</span>
     </button>
   </div>
 
@@ -284,14 +284,14 @@
     <section class="rounded-lg border border-sky-200 bg-white shadow">
       <form class="grid gap-4 p-6 md:grid-cols-2" on:submit={saveMapping}>
         <label class="flex flex-col text-sm">
-          <span class="mb-1 font-medium">Role</span>
+          <span class="mb-1 font-medium">Rol</span>
           <select
             class="rounded border px-3 py-2"
             bind:value={form.role_id}
             disabled={rolesLoading || submitting}
             required
           >
-            <option value="" disabled>Choose a role</option>
+            <option value="" disabled>Selecciona un rol</option>
             {#each roles as role}
               <option value={role.id}>{role.name}</option>
             {/each}
@@ -299,14 +299,14 @@
         </label>
 
         <label class="flex flex-col text-sm md:col-span-2">
-          <span class="mb-1 font-medium">Task</span>
+          <span class="mb-1 font-medium">Tarea</span>
           <select
             class="rounded border px-3 py-2"
             bind:value={form.task_id}
             disabled={tasksLoading || submitting}
             required
           >
-            <option value="" disabled>Choose a task</option>
+            <option value="" disabled>Selecciona una tarea</option>
             {#each tasks as task}
               <option value={task.id}>{taskLabel(task)}</option>
             {/each}
@@ -319,7 +319,7 @@
             class="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-60"
             disabled={submitting}
           >
-            {creating ? "Create mapping" : "Save changes"}
+            {creating ? "Crear asignación" : "Guardar cambios"}
           </button>
           <button
             type="button"
@@ -327,7 +327,7 @@
             on:click={cancelEdit}
             disabled={submitting}
           >
-            Cancel
+            Cancelar
           </button>
         </div>
       </form>
@@ -347,7 +347,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("role")}
               >
-                ROLE
+                Rol
                 {#if sortKey === "role"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -359,7 +359,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("task")}
               >
-                TASK
+                Tarea
                 {#if sortKey === "task"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -371,7 +371,7 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("category")}
               >
-                CATEGORY
+                Categoría
                 {#if sortKey === "category"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
@@ -383,14 +383,14 @@
                 class={HEADER_BUTTON_CLASS}
                 on:click={() => toggleSort("task_key")}
               >
-                TASK KEY
+                Clave de tarea
                 {#if sortKey === "task_key"}
                   <span>{sortDirection === "asc" ? "▲" : "▼"}</span>
                 {/if}
               </button>
             </th>
             <th class="px-3 py-2 text-right">
-              <span class={HEADER_LABEL_CLASS}>ACTIONS</span>
+              <span class={HEADER_LABEL_CLASS}>Acciones</span>
             </th>
           </tr>
         </thead>
@@ -398,13 +398,13 @@
           {#if mappingsLoading}
             <tr>
               <td class="px-3 py-4 text-sm text-sky-900" colspan="5">
-                Loading mappings…
+                Cargando asignaciones…
               </td>
             </tr>
           {:else if !mappings.length}
             <tr>
               <td class="px-3 py-4 text-sm text-sky-900" colspan="5">
-                No mappings found
+                No hay asignaciones
               </td>
             </tr>
           {:else}
@@ -429,7 +429,7 @@
                       class="inline-flex items-center justify-center rounded border border-indigo-200 bg-white p-2 text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-50"
                       on:click={() => startEdit(mapping)}
                       disabled={submitting}
-                      aria-label={`Edit mapping for ${mapping.role_name || mapping.role_id}`}
+                      aria-label={`Editar asignación de ${mapping.role_name || mapping.role_id}`}
                     >
                       {@html icons.edit}
                     </button>
@@ -438,7 +438,7 @@
                       class="inline-flex items-center justify-center rounded border border-rose-200 bg-white p-2 text-rose-700 transition hover:border-rose-300 hover:bg-rose-50"
                       on:click={() => removeMapping(mapping)}
                       disabled={submitting}
-                      aria-label={`Delete mapping for ${mapping.role_name || mapping.role_id}`}
+                      aria-label={`Eliminar asignación de ${mapping.role_name || mapping.role_id}`}
                     >
                       {@html icons.trash}
                     </button>

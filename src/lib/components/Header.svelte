@@ -4,9 +4,7 @@
   export let onProfile = () => {};
 </script>
 
-<header
-  class="flex items-center justify-end px-4 py-3 bg-sky-100 border-b border-sky-200"
->
+<header class="flex items-center justify-end px-4 py-3 bg-sky-100 border-b border-sky-200">
   <div class="flex items-center gap-4">
     {#if user}
       <div class="text-sm text-sky-900">{user.email}</div>
