@@ -635,7 +635,7 @@
                       multiple
                       size={Math.min(5, Math.max(locationOptions.length + 1, 4))}
                       bind:value={draft.selectedLocationIds}
-                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      class="h-full w-full min-w-[18rem] rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
                       disabled={submitting || referenceLoading}
                       on:change={(event) => handleMultiSelectChange(event, "selectedLocationIds")}
                     >
@@ -658,7 +658,7 @@
                       multiple
                       size={Math.min(5, Math.max(assetCategoryOptions.length + 1, 4))}
                       bind:value={draft.selectedAssetCategoryIds}
-                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      class="h-full w-full min-w-[18rem] rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
                       disabled={submitting || referenceLoading}
                       on:change={(event) => handleMultiSelectChange(event, "selectedAssetCategoryIds")}
                     >
@@ -681,7 +681,7 @@
                       multiple
                       size={Math.min(6, Math.max(responsibleOptions.length + 1, 5))}
                       bind:value={draft.selectedResponsibleIds}
-                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      class="h-full w-full min-w-[18rem] rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
                       disabled={submitting || referenceLoading}
                       on:change={(event) => handleMultiSelectChange(event, "selectedResponsibleIds")}
                     >
@@ -793,7 +793,7 @@
                       multiple
                       size={Math.min(5, Math.max(locationOptions.length + 1, 4))}
                       bind:value={draft.selectedLocationIds}
-                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      class="h-full w-full min-w-[18rem] rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
                       disabled={submitting || referenceLoading}
                       on:change={(event) => handleMultiSelectChange(event, "selectedLocationIds")}
                     >
@@ -810,7 +810,7 @@
                       multiple
                       size={Math.min(5, Math.max(assetCategoryOptions.length + 1, 4))}
                       bind:value={draft.selectedAssetCategoryIds}
-                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      class="h-full w-full min-w-[18rem] rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
                       disabled={submitting || referenceLoading}
                       on:change={(event) => handleMultiSelectChange(event, "selectedAssetCategoryIds")}
                     >
@@ -827,7 +827,7 @@
                       multiple
                       size={Math.min(6, Math.max(responsibleOptions.length + 1, 5))}
                       bind:value={draft.selectedResponsibleIds}
-                      class="h-full w-full rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
+                      class="h-full w-full min-w-[18rem] rounded border border-sky-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none"
                       disabled={submitting || referenceLoading}
                       on:change={(event) => handleMultiSelectChange(event, "selectedResponsibleIds")}
                     >
